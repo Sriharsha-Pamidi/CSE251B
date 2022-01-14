@@ -1,2 +1,4 @@
 # CSE251B
-CSE252B
+CSE251B Assignments 
+
+
