@@ -7,10 +7,11 @@ from pca import PCA
 import numpy as np
 def main(hyperparameters):
     dataset = data.load_data(False)
-    print(dataset[0][0].shape)
-
-    a = data.generate_k_fold_set(dataset)
-    print(np.array(list(a)[0][0]).shape)
+    pca_instace = PCA(hyperparameters.in_dim)
+    X,y = dataset
+    pca_instace.fit(X[:20])
+    X_1= pca_instace.fit_transform(X[:10])
+    print(X_1)
     pass
 
 
