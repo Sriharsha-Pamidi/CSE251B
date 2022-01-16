@@ -148,5 +148,6 @@ def generate_k_fold_set(dataset, k=5):
 		train = np.concatenate([X[order[:l_idx]], X[order[r_idx:]]]), np.concatenate(
 			[y[order[:l_idx]], y[order[r_idx:]]])
 		validation = X[order[l_idx:r_idx]], y[order[l_idx:r_idx]]
-		yield train, validation
-		l_idx, r_idx = r_idx, r_idx + fold_width
+		test = X[order[l_idx+fold_width:r_idx]], y[order[l_idx+fold_width:r_idx]]
+		yield train, validation, test
+		l_idx, r_idx = r_idx, r_idx + 2*fold_width

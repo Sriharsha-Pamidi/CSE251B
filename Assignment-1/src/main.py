@@ -4,9 +4,14 @@ from network import Network
 import data
 from pca import PCA
 
-
+import numpy as np
 def main(hyperparameters):
-	pass
+    dataset = data.load_data(False)
+    print(dataset[0][0].shape)
+
+    a = data.generate_k_fold_set(dataset)
+    print(np.array(list(a)[0][0]).shape)
+    pass
 
 
 parser = argparse.ArgumentParser(description='CSE251B PA1')

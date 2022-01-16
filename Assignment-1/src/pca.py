@@ -33,6 +33,13 @@ class PCA:
         X : np.array
             Training data to fit internal parameters.
         """
+        self.mean_vector = np.mean(X)
+        self.covariance_matrix = np.covar(X)
+        self.eigen_values, self.eigen_vectors = np.linalg.eig(self.covariance_matrix)
+        self.pca_indices = np.array(-1*self.eigen_values)
+        self.pca_indices = self.pca_indices.argsort()[:self.num_components]
+        self.transform_matrix = self.eigen_vectors[self.pca_indices]
+        self.transform_sigma = np.sqrt(self.eigen_values[self.pca_indices])
         pass
 
 
@@ -52,6 +59,10 @@ class PCA:
         -------
             Transformed dataset with lower dimensionality
         """
+        
+        X = X - self.mean_vector
+        X = X*self.transform_matrix
+        X = X/self.transform_sigma
         pass
 
 
