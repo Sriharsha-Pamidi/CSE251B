@@ -14,11 +14,11 @@ load_data = traffic_sign
 
 
 def z_score_normalize(X, u = None, sd = None):
-	return (X - np.mean(X)) / np.std(X)
+	return (X - np.mean(X,axis=0)) / np.std(X,axis=0)
 
 
 def min_max_normalize(X, _min = None, _max = None):
-	return (X - np.min(X)) / (np.max(X) - np.min(X))
+	return (X - np.min(X,axis=0)) / (np.max(X,axis=0) - np.min(X,axis=0))
 
 
 def onehot_encode(y):
@@ -34,7 +34,9 @@ def shuffle(dataset):
 
 
 def append_bias(X):
-	pass
+    ones_matrix = np.ones((X.shape[0],1))
+    X = np.concatenate((X,ones_matrix),axis = 1)
+    return X
 
 
 def generate_minibatches(dataset, batch_size = 64):
