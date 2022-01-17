@@ -3,15 +3,29 @@ import network
 from network import Network
 import data
 from pca import PCA
-
 import numpy as np
+
+
+def run_an_epoch(X_train,y_train,X_valid,y_valid,my_NN):
+    train_loss = my_NN.train((X_train,y_train))
+    valid_loss = my_NN.test((X_valid,y_valid))
+    return train_loss, valid_loss
+
+def runLogisticRegresssion(dataset,hyperparameters):
+    my_NN = Network(hyperparameters,network.sigmoid,network.binary_cross_entropy)
+    curr_train_loss = float("inf")
+    curr_valid_loss = float("inf")
+    for i in range(hyperparameters.epochs):
+        train_loss,valid_loss = run_an_epoch(X_train,y_train,X_valid,y_valid,my_NN)
+        
+
 def main(hyperparameters):
     dataset = data.load_data(False)
     pca_instace = PCA(hyperparameters.in_dim)
     X,y = dataset
     pca_instace.fit(X[:20])
     X_1= pca_instace.fit_transform(X[:10])
-    print(X_1)
+    print(hyperparameters.epochs)
     pass
 
 
@@ -34,3 +48,8 @@ parser.add_argument('--k-folds', type=int, default=5,
 
 hyperparameters = parser.parse_args()
 main(hyperparameters)
+
+
+
+
+
