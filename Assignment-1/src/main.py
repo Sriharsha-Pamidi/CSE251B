@@ -3,14 +3,55 @@ import network
 from network import Network
 import data
 from pca import PCA
-
 import numpy as np
-def main(hyperparameters):
-    dataset = data.load_data(False)
-    print(dataset[0][0].shape)
 
-    a = data.generate_k_fold_set(dataset)
-    print(np.array(list(a)[0][0]).shape)
+
+def run_an_epoch(X_train,y_train,X_valid,y_valid,my_NN):
+    train_loss = my_NN.train((X_train,y_train))
+    valid_loss = my_NN.test((X_valid,y_valid))
+    return train_loss, valid_loss
+
+def runLogisticRegresssion(dataset,hyperparameters):
+    pca_instace = PCA(hyperparameters.in_dim)
+
+#     train, validation, test = 
+    pca_instace.fit()
+    X_1= pca_instace.fit_transform(X[:10])
+    
+    my_NN = Network(hyperparameters,network.sigmoid,network.binary_cross_entropy)
+    curr_train_loss = float("inf")
+    curr_valid_loss = float("inf")
+    for i in range(hyperparameters.epochs):
+        train_loss,valid_loss = run_an_epoch(X_train,y_train,X_valid,y_valid,my_NN)
+        if(valid_loss>curr_valid_loss):
+            break
+        curr_train_loss, curr_valid_loss = train_loss, valid_loss
+    
+    test_loss = my_NN.test((X_test,y_test))
+
+def main(hyperparameters):
+    ###data reading
+    dataset = data.load_data(False)
+    train, valid, test = list(data.generate_k_fold_set(dataset))[0]
+    
+    ###PCA
+    print("PCA FIT- E")
+    pca_instace = PCA(hyperparameters.in_dim)
+    pca_instace.fit(train[0])
+    print("PCA FIT- X")
+    train = (pca_instace.transform(train[0]),train[1])
+    valid = (pca_instace.transform(valid[0]),valid[1])
+    test = (pca_instace.transform(test[0]),test[1])
+    
+    ###training
+    print("Training - E")
+#     my_NN = Network(hyperparameters,network.sigmoid,network.binary_cross_entropy)
+    my_NN = Network(hyperparameters,"wekrhb","werw")
+    test_error, valid_cost = my_NN.train(train,valid,test)
+    print("test accuracy-",test_error)
+    print("Training - X")
+    
+    
     pass
 
 
@@ -19,7 +60,7 @@ parser.add_argument('--batch-size', type=int, default=128,
                     help='input batch size for training (default: 128)')
 parser.add_argument('--epochs', type=int, default=300,
                     help='number of epochs to train (default: 150)')
-parser.add_argument('--learning-rate', type=float, default=0.001,
+parser.add_argument('--learning-rate', type=float, default=0.0005,
                     help='learning rate (default: 0.001)')
 parser.add_argument('--z-score', dest='normalization', action='store_const',
                     default=data.min_max_normalize, const=data.z_score_normalize,
@@ -33,8 +74,4 @@ parser.add_argument('--k-folds', type=int, default=5,
 
 hyperparameters = parser.parse_args()
 main(hyperparameters)
-
-
-
-
 
