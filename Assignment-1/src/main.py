@@ -60,8 +60,8 @@ def main(hyperparameters):
     ###data reading and preprocessing
     print("data reading and preprocessing- E")
     dataset = data.load_data(True)
-    softmax_regression(dataset,hyperparameters)
-    return 0
+#     softmax_regression(dataset,hyperparameters)
+#     return 0
     X,y = dataset
     
     scaler = preprocessing.StandardScaler().fit(X)

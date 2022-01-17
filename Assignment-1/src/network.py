@@ -112,7 +112,7 @@ class Network:
             training_costs.append(self.loss(self.weights, X, y))
             validation_costs.append(validation_cost)
             testing_costs.append(self.loss(self.weights, X_test, y_test))
-            if(epoch%100 == 99):
+            if(epoch%1000 == 999):
                 print(validation_cost)
             if validation_cost < prev_val_cost:
                 prev_val_cost = validation_cost
@@ -148,7 +148,8 @@ class Network:
         if(self.activation == sigmoid):
             y = y.reshape(y.shape[0],1)
         y_pred = self.forward(X)
-
+        if(self.activation == sigmoid):
+            return  np.sum(y == y_pred) / len(y) * 100
         return  (np.sum(y*y_pred)) / y.shape[0] * 100
 
         pass
