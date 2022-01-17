@@ -2,9 +2,9 @@ import argparse
 import network
 from network import Network
 import data
-from pca import PCA
+# from pca import PCA
 import numpy as np
-
+from sklearn.decomposition import PCA
 
 def run_an_epoch(X_train,y_train,X_valid,y_valid,my_NN):
     train_loss = my_NN.train((X_train,y_train))
@@ -31,7 +31,8 @@ def runLogisticRegresssion(dataset,hyperparameters):
 
 def main(hyperparameters):
     ###data reading
-    dataset = data.load_data(False)
+    dataset = data.load_data(True)
+    dataset = (data.min_max_normalize(dataset[0]),dataset[1])
     train, valid, test = list(data.generate_k_fold_set(dataset))[0]
     
     ###PCA
@@ -42,7 +43,7 @@ def main(hyperparameters):
     train = (pca_instace.transform(train[0]),train[1])
     valid = (pca_instace.transform(valid[0]),valid[1])
     test = (pca_instace.transform(test[0]),test[1])
-    
+#     print(valid[0][:23])
     ###training
     print("Training - E")
 #     my_NN = Network(hyperparameters,network.sigmoid,network.binary_cross_entropy)
@@ -60,7 +61,7 @@ parser.add_argument('--batch-size', type=int, default=128,
                     help='input batch size for training (default: 128)')
 parser.add_argument('--epochs', type=int, default=300,
                     help='number of epochs to train (default: 150)')
-parser.add_argument('--learning-rate', type=float, default=0.0005,
+parser.add_argument('--learning-rate', type=float, default=0.001,
                     help='learning rate (default: 0.001)')
 parser.add_argument('--z-score', dest='normalization', action='store_const',
                     default=data.min_max_normalize, const=data.z_score_normalize,
