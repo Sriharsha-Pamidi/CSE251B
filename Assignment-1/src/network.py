@@ -16,50 +16,50 @@ max_epsilon = 25
 init_var = 1
 init_mue = 0
 
-def sigmoid(X,w):
-    a = np.dot(X,w)
-    a[a>max_epsilon] = max_epsilon
-    a[a<min_epsilon] = min_epsilon
-    return (1-epsilon) /  (1 + np.exp(-1 * a))
+
+def sigmoid(X, w):
+	a = np.dot(X, w)
+	a[a > max_epsilon] = max_epsilon
+	a[a < min_epsilon] = min_epsilon
+	return (1 - epsilon) / (1 + np.exp(-1 * a))
 
 
-def softmax(X,w):
-    a = np.dot(X,w)
-    e = np.exp(a)
-    return e / np.sum(e,axis=1).reshape(X.shape[0],1)
+def softmax(X, w):
+	a = np.dot(X, w)
+	e = np.exp(a)
+	return e / np.sum(e, axis=1).reshape(X.shape[0], 1)
 
 
 def binary_cross_entropy(w, X, Y):
-    
-#     sigmoid_coeff = (np.dot(X, w))
-    val = sigmoid(X,w)
- 
-    J = -1 * (np.multiply(Y, np.log(val)) + np.multiply((1 - Y), np.log(1 - val)))
-    cost = np.sum(J) / X.shape[0]
+	#     sigmoid_coeff = (np.dot(X, w))
+	val = sigmoid(X, w)
 
-    return cost
+	J = -1 * (np.multiply(Y, np.log(val)) + np.multiply((1 - Y), np.log(1 - val)))
+	cost = np.sum(J) / X.shape[0]
+
+	return cost
 
 
 def multiclass_cross_entropy(w, X, y):
-    val = softmax(X,w)
+	val = softmax(X, w)
 
-    return np.sum(y*val)/X.shape[0]
+	return -np.sum(np.multiply(y,np.log(val)))/X.shape[0]
 
 
 def logistic_gradient(w, X, Y):
+	A = sigmoid(X, w)
+	difference = np.reshape(Y, (len(Y), 1)) - A
+	dw = -(np.dot(X.transpose(), difference) / X.shape[0])
+	return dw
 
-    A = sigmoid(X,w)
-    difference = np.reshape(Y,(len(Y),1)) - A
-    dw =-(np.dot(X.transpose(), difference) / X.shape[0])
-    return dw
 
 def softmax_gradient(w, X, Y):
+	A = softmax(X, w)
+	difference = Y - A
+	dw = -(np.dot(X.transpose(), difference) / X.shape[0])
 
-    A = softmax(X,w)
-    difference = Y - A
-    dw =-(np.dot(X.transpose(), difference) / X.shape[0])
+	return dw
 
-    return dw
 
 class Network:
     global w_best

@@ -1,7 +1,8 @@
 import numpy as np
 
+
 class PCA:
-    """
+	"""
     This class handles all things related to PCA for PA1.
 
     You can add any new parameters you need to any functions. This is an 
@@ -13,8 +14,9 @@ class PCA:
     For the visualization of the principal components, use the internal 
     parameters that are set in `fit`.
     """
-    def __init__(self, num_components):
-        """
+	
+	def __init__(self, num_components):
+		"""
         Setup the PCA object. 
 
         Parameters
@@ -22,10 +24,10 @@ class PCA:
         num_components : int
             The number of principal components to reduce to.
         """
-        self.num_components = num_components
-
-    def fit(self, X):
-        """
+		self.num_components = num_components
+	
+	def fit(self, X):
+		"""
         Set the internal parameters of the PCA object to the data.
 
         Parameters
@@ -33,23 +35,22 @@ class PCA:
         X : np.array
             Training data to fit internal parameters.
         """
-        self.mean_vector = np.mean(X,axis=0)
-        self.covariance_matrix = np.cov(X.T)
-        self.eigen_values, self.eigen_vectors = np.linalg.eig(self.covariance_matrix)
-#         u, s, vh = np.linalg.svd(X - self.mean_vector, full_matrices=True)
-#         print(u.shape)
-#         print(np.sum(np.power(vh[20,:],2)))
-        self.eigen_values = abs(self.eigen_values)
-        self.eigen_vectors = abs(self.eigen_vectors)
-        self.pca_indices = np.array(-1*self.eigen_values)
-        self.pca_indices = self.pca_indices.argsort()[:self.num_components]
-        self.transform_matrix = self.eigen_vectors.T[self.pca_indices]
-        self.transform_sigma = np.sqrt(self.eigen_values[self.pca_indices])
-        pass
-
-
-    def transform(self, X):
-        """
+		self.mean_vector = np.mean(X, axis=0)
+		self.covariance_matrix = np.cov(X.T)
+		self.eigen_values, self.eigen_vectors = np.linalg.eig(self.covariance_matrix)
+		#         u, s, vh = np.linalg.svd(X - self.mean_vector, full_matrices=True)
+		#         print(u.shape)
+		#         print(np.sum(np.power(vh[20,:],2)))
+		self.eigen_values = abs(self.eigen_values)
+		self.eigen_vectors = abs(self.eigen_vectors)
+		self.pca_indices = np.array(-1 * self.eigen_values)
+		self.pca_indices = self.pca_indices.argsort()[:self.num_components]
+		self.transform_matrix = self.eigen_vectors.T[self.pca_indices]
+		self.transform_sigma = np.sqrt(self.eigen_values[self.pca_indices])
+		pass
+	
+	def transform(self, X):
+		"""
         Use the internal parameters set with `fit` to transform data.
 
         Make sure you are using internal parameters computed during `fit` 
@@ -64,13 +65,12 @@ class PCA:
         -------
             Transformed dataset with lower dimensionality
         """
-        
-        X = X - self.mean_vector
-        X = np.dot(X,self.transform_matrix.T)
-#         X = X/self.transform_sigma
-        return X
-
-
-    def fit_transform(self, X):
-        self.fit(X)
-        return self.transform(X)
+		
+		X = X - self.mean_vector
+		X = np.dot(X, self.transform_matrix.T)
+		#         X = X/self.transform_sigma
+		return X
+	
+	def fit_transform(self, X):
+		self.fit(X)
+		return self.transform(X)
