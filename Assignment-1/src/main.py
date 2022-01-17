@@ -5,6 +5,7 @@ import data
 # from pca import PCA
 import numpy as np
 from sklearn.decomposition import PCA
+from sklearn import preprocessing
 
 def run_an_epoch(X_train,y_train,X_valid,y_valid,my_NN):
     train_loss = my_NN.train((X_train,y_train))
@@ -32,9 +33,11 @@ def runLogisticRegresssion(dataset,hyperparameters):
 def main(hyperparameters):
     ###data reading
     dataset = data.load_data(True)
-    dataset = (data.min_max_normalize(dataset[0]),dataset[1])
+    scaler = preprocessing.StandardScaler().fit(dataset[0])
+    dataset = (scaler.transform(dataset[0]),dataset[1])
+#     dataset = (data.min_max_normalize(dataset[0]),dataset[1])
     train, valid, test = list(data.generate_k_fold_set(dataset))[0]
-    
+
     ###PCA
     print("PCA FIT- E")
     pca_instace = PCA(hyperparameters.in_dim)
