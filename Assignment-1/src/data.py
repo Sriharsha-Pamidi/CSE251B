@@ -1,11 +1,10 @@
 import random
 import numpy as np
 
-
 from traffic_reader import load_traffic
 
 
-def traffic_sign(aligned=True):
+def traffic_sign(aligned = True):
 	if aligned:
 		return load_traffic('data', kind='aligned')
 	return load_traffic('data', kind='unaligned')
@@ -14,109 +13,23 @@ def traffic_sign(aligned=True):
 load_data = traffic_sign
 
 
-def z_score_normalize(X, u=None, sd=None):
-	"""
-	Performs z-score normalization on X.
-
-	f(x) = (x - μ) / σ
-		where
-			μ = mean of x
-			σ = standard deviation of x
-
-	Parameters
-	----------
-	X : np.array
-		The data to min-max normalize
-
-	Returns
-	-------
-		Tuple:
-			Transformed dataset with mean 0 and stdev 1
-			Computed statistics (mean and stdev) for the dataset to undo z-scoring.
-	"""
+def z_score_normalize(X, u = None, sd = None):
 	return (X - np.mean(X)) / np.std(X)
 
 
-def min_max_normalize(X, _min=None, _max=None):
-	"""
-	Performs min-max normalization on X.
-
-	f(x) = (x - min(x)) / (max(x) - min(x))
-
-	Parameters
-	----------
-	X : np.array
-		The data to min-max normalize
-
-	Returns
-	-------
-		Tuple:
-			Transformed dataset with all values in [0,1]
-			Computed statistics (min and max) for the dataset to undo min-max normalization.
-	"""
+def min_max_normalize(X, _min = None, _max = None):
 	return (X - np.min(X)) / (np.max(X) - np.min(X))
 
 
 def onehot_encode(y):
-	"""
-	Performs one-hot encoding on y.
-
-	Ideas:
-		NumPy's `eye` function
-
-	Parameters
-	----------
-	y : np.array
-		1d array (length n) of targets (k)
-
-	Returns
-	-------
-	2d array (shape n*k) with each row corresponding to a one-hot encoded version of the original value.
-	"""
 	return np.eye(np.max(y) + 1)[y]
 
 
 def onehot_decode(y):
-	"""
-	Performs one-hot decoding on y.
-
-    Ideas:
-        NumPy's `argmax` function 
-
-    Parameters
-    ----------
-    y : np.array
-        2d array (shape n*k) with each row corresponding to a one-hot encoded version of the original value.
-
-    Returns
-    -------
-        1d array (length n) of targets (k)
-    """
 	return np.argmax(y, axis=1)
 
 
 def shuffle(dataset):
-	"""
-    Shuffle dataset.
-
-    Make sure that corresponding images and labels are kept together. 
-    Ideas: 
-        NumPy array indexing 
-            https://numpy.org/doc/stable/user/basics.indexing.html#advanced-indexing
-
-    Parameters
-    ----------
-    dataset
-        Tuple containing
-            Images (X)
-            Labels (y)
-
-    Returns
-    -------
-        Tuple containing
-            Images (X)
-            Labels (y)
-    """
 	return random.shuffle(dataset)
 
 
@@ -124,7 +37,7 @@ def append_bias(X):
 	pass
 
 
-def generate_minibatches(dataset, batch_size=64):
+def generate_minibatches(dataset, batch_size = 64):
 	X, y = dataset
 	l_idx, r_idx = 0, batch_size
 	while r_idx < len(X):
@@ -134,8 +47,7 @@ def generate_minibatches(dataset, batch_size=64):
 	yield X[l_idx:], y[l_idx:]
 
 
-def generate_k_fold_set(dataset, k=5):
-	# Be sure to modify to include train/val/test
+def generate_k_fold_set(dataset, k = 5):
 	X, y = dataset
 	
 	order = np.random.permutation(len(X))
@@ -148,6 +60,24 @@ def generate_k_fold_set(dataset, k=5):
 		train = np.concatenate([X[order[:l_idx]], X[order[r_idx:]]]), np.concatenate(
 			[y[order[:l_idx]], y[order[r_idx:]]])
 		validation = X[order[l_idx:r_idx]], y[order[l_idx:r_idx]]
-		test = X[order[l_idx+fold_width:r_idx]], y[order[l_idx+fold_width:r_idx]]
+		test = X[order[l_idx + fold_width:r_idx]], y[order[l_idx + fold_width:r_idx]]
 		yield train, validation, test
-		l_idx, r_idx = r_idx, r_idx + 2*fold_width
+		l_idx, r_idx = r_idx, r_idx + 2 * fold_width
+
+
+# def generate_k_distributed_fold_set(dataset, k = 5):
+# 	X, y = dataset
+#
+# 	new_dataset =
+# 	for p in set(y):
+# 		dataset_n = filter(lambda f: f == p, list(zip(X, y)))
+#
+# 	pass
+
+#
+# if __name__ == '__main__':
+# 	pp = load_data(False)
+# 	dataset = generate_k_distributed_fold_set(pp)
+# 	print(dataset)
+#
+# 	poi = 0
