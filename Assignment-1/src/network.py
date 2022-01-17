@@ -23,9 +23,10 @@ def sigmoid(X,w):
     return (1-epsilon) /  (1 + np.exp(-1 * a))
 
 
-def softmax(a):
+def softmax(X,w):
+    a = np.dot(X,w)
     e = np.exp(a)
-    return e / e.sum()
+    return e / np.sum(e,axis=1).reshape(X.shape[0],1)
 
 
 def binary_cross_entropy(w, X, Y):
@@ -40,24 +41,25 @@ def binary_cross_entropy(w, X, Y):
 
 
 def multiclass_cross_entropy(w, X, y):
+    val = softmax(X,w)
 
-    sigmoid_coeff = (np.dot(X, w)) + b
-    val = sigmoid(sigmoid_coeff)
-
-    return -np.mean(np.log(val[np.arange(len(y)), y]))
+    return np.sum(y*val)/X.shape[0]
 
 
 def logistic_gradient(w, X, Y):
 
-#     sigmoid_coeff = (np.dot(X, w)) #+ b
     A = sigmoid(X,w)
-    
-
     difference = np.reshape(Y,(len(Y),1)) - A
+    dw =-(np.dot(X.transpose(), difference) / X.shape[0])
+    return dw
+
+def softmax_gradient(w, X, Y):
+
+    A = softmax(X,w)
+    difference = Y - A
     dw =-(np.dot(X.transpose(), difference) / X.shape[0])
 
     return dw
-
 
 class Network:
     global w_best
@@ -71,9 +73,14 @@ class Network:
         self.epsilon = epsilon
         self.weights = np.random.normal(init_mue,init_var,size=(hyperparameters.in_dim+1, hyperparameters.out_dim))
 
-
     def forward(self, X):
-        return np.where(self.activation(X,self.weights) > 0.5, 1, 0)
+        if(self.activation==sigmoid):
+            return np.where(self.activation(X,self.weights)>0.5,1,0)
+        
+        probabilties = self.activation(X,self.weights)
+        probabilties[probabilties!=(np.max(probabilties,axis=1)).reshape(X.shape[0],1)] = 0
+        probabilties[probabilties==(np.max(probabilties,axis=1)).reshape(X.shape[0],1)] = 1
+        return probabilties
 
     def __call__(self, X):
         return self.forward(X)
@@ -105,7 +112,8 @@ class Network:
             training_costs.append(self.loss(self.weights, X, y))
             validation_costs.append(validation_cost)
             testing_costs.append(self.loss(self.weights, X_test, y_test))
-
+            if(epoch%100 == 99):
+                print(validation_cost)
             if validation_cost < prev_val_cost:
                 prev_val_cost = validation_cost
                 w_best = self.weights
@@ -137,10 +145,11 @@ class Network:
         The minibatch to iterate over
     """
         X, y = minibatch
-        y = y.reshape(y.shape[0],1)
+        if(self.activation == sigmoid):
+            y = y.reshape(y.shape[0],1)
         y_pred = self.forward(X)
 
-        return  sum(y == y_pred) / len(y) * 100
+        return  (np.sum(y*y_pred)) / y.shape[0] * 100
 
         pass
 

@@ -30,11 +30,38 @@ def runLogisticRegresssion(dataset,hyperparameters):
     
     test_loss = my_NN.test((X_test,y_test))
 
+    
+def softmax_regression(dataset,hyperparameters):
+    X,y = dataset
+    scaler = preprocessing.StandardScaler().fit(X)
+    dataset = (scaler.transform(X),data.onehot_encode(dataset[1]))
+    train, valid, test = list(data.generate_k_fold_set(dataset))[0]
+    
+    ###PCA
+    print("PCA FIT- E")
+    pca_instace = PCA(hyperparameters.in_dim)
+    pca_instace.fit(train[0])
+    train = (data.append_bias(pca_instace.transform(train[0])),train[1])
+    valid = (data.append_bias(pca_instace.transform(valid[0])),valid[1])
+    test = (data.append_bias(pca_instace.transform(test[0])),test[1])
+    print("PCA FIT- X")
+
+    ###training
+    print("Training - E")
+#     my_NN = Network(hyperparameters,network.sigmoid,network.binary_cross_entropy)
+    my_NN = Network(hyperparameters,network.softmax,network.multiclass_cross_entropy,network.softmax_gradient)
+    test_error, valid_cost = my_NN.train(train,valid,test)
+    print("test accuracy-",test_error)
+    print("Training - X")
+    
+    
 def main(hyperparameters):
     
     ###data reading and preprocessing
     print("data reading and preprocessing- E")
     dataset = data.load_data(True)
+    softmax_regression(dataset,hyperparameters)
+    return 0
     X,y = dataset
     
     scaler = preprocessing.StandardScaler().fit(X)
@@ -64,7 +91,7 @@ def main(hyperparameters):
     print("test accuracy-",test_error)
     print("Training - X")
     
-    
+
     pass
 
 
