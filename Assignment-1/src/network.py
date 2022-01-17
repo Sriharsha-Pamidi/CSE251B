@@ -13,6 +13,9 @@ Once you're sure everything works, use NumPy's vector operations (dot products, 
 epsilon = 1e-7
 min_epsilon = -25
 max_epsilon = 25
+init_var = 1
+init_mue = 0
+
 def sigmoid(a):
     a[a>max_epsilon] = max_epsilon
     a[a<min_epsilon] = min_epsilon
@@ -73,8 +76,8 @@ class Network:
         self.loss = loss
         self.learning_rate = hyperparameters.learning_rate
         self.epsilon = epsilon
-        self.weights = np.random.normal(0,5,size=(hyperparameters.in_dim, hyperparameters.out_dim))
-        self.bias = np.random.normal(0,5)
+        self.weights = np.random.normal(init_mue,init_var,size=(hyperparameters.in_dim, hyperparameters.out_dim))
+        self.bias = np.random.normal(init_mue,init_var)
 
     def forward(self, X):
         sigmoid_coeff = (np.dot(X, self.weights)) + self.bias
