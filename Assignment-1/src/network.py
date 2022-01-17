@@ -51,6 +51,19 @@ def gradient_computation_logistic(w, b, X, Y):
     return [dw, db]
 
 
+def gradient_computation_softmax(w, b, X, Y):
+#           w  =    [w0 , we0 , wei0]   Y = [t1 , t2 , t3  ]    b = [b1 , b2 , b3]
+#                   [w1 , we1 , wei1]       [ta1, ta2 ,ta3 ]
+#                   [w2 , we2 , wei2]       [tar1,tar2,tar3]
+#
+    softmax_coeff = np.dot(X, w) + b
+    A = softmax(softmax_coeff)
+
+    difference = Y - A
+    dw = np.dot(X.transpose(), difference) / X.shape[0]
+    db = np.squeeze(np.sum(difference, axis=0)) / X.shape[0]
+    return [dw, db]
+
 class Network:
     global w_best
 
@@ -66,6 +79,12 @@ class Network:
     def forward(self, X):
         sigmoid_coeff = (np.dot(X, self.weights)) + self.bias
         return np.where(sigmoid(sigmoid_coeff) > 0.5, 1, 0)
+
+    def forward_softmax(self,X):
+        softmax_coeff = np.dot(X,(self.weights).transpose()) + self.bias
+        softmax_coeff[softmax_coeff != max(softmax_coeff)] = 0
+        softmax_coeff[softmax_coeff == max(softmax_coeff)] = 1
+        return softmax_coeff
 
     def __call__(self, X):
         return self.forward(X)
@@ -141,3 +160,20 @@ class Network:
 
         pass
 
+if __name__ == '__main__':
+    a = np.array([[1,2,3],[4,5,6],[7,8,9]])
+    b = np.array([[10,20,30],[40,50,60],[70,80,90]])
+    # print(a)
+    a = (np.where( a > 7 ,1 ,0))
+    # print(a)
+    # print(np.log(2))
+    [a,b] = [np.array([1,2,3]), 1]
+    [a,b] = [np.array([4,5,6]), 1]
+
+    print(a,b)
+
+    # c = np.array([0.1,0.2,0.3,0.4,0.5])
+    # print(c==max(c))
+    # c[c!=max(c)] = 0
+    # c[c==max(c)] = 1
+    # print(c)
