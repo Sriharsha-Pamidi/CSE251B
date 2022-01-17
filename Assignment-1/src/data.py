@@ -54,7 +54,7 @@ def generate_k_fold_set(dataset, k = 5):
 	
 	fold_width = len(X) // k
 	
-	l_idx, r_idx = 0, fold_width
+	l_idx, r_idx = 0, 2*fold_width
 	
 	for i in range(k):
 		train = np.concatenate([X[order[:l_idx]], X[order[r_idx:]]]), np.concatenate(
