@@ -18,7 +18,7 @@ def runLogisticRegresssion(dataset,hyperparameters):
     pca_instace.fit()
     X_1= pca_instace.fit_transform(X[:10])
     
-    my_NN = Network(hyperparameters,network.sigmoid,network.binary_cross_entropy)
+    my_NN = Network(hyperparameters,network.sigmoid,network.binary_cross_entropy,network.logistic_gradient)
     curr_train_loss = float("inf")
     curr_valid_loss = float("inf")
     for i in range(hyperparameters.epochs):
@@ -32,7 +32,7 @@ def runLogisticRegresssion(dataset,hyperparameters):
 def main(hyperparameters):
     ###data reading
     dataset = data.load_data(True)
-    dataset = (data.min_max_normalize(dataset[0]),dataset[1])
+    dataset = (data.z_score_normalize(dataset[0]),dataset[1])
     train, valid, test = list(data.generate_k_fold_set(dataset))[0]
     
     ###PCA
@@ -46,8 +46,7 @@ def main(hyperparameters):
 #     print(valid[0][:23])
     ###training
     print("Training - E")
-#     my_NN = Network(hyperparameters,network.sigmoid,network.binary_cross_entropy)
-    my_NN = Network(hyperparameters,"wekrhb","werw")
+    my_NN = Network(hyperparameters,network.sigmoid,network.binary_cross_entropy,network.logistic_gradient)
     test_error, valid_cost = my_NN.train(train,valid,test)
     print("test accuracy-",test_error)
     print("Training - X")
