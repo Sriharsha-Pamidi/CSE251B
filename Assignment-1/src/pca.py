@@ -36,6 +36,9 @@ class PCA:
         self.mean_vector = np.mean(X,axis=0)
         self.covariance_matrix = np.cov(X.T)
         self.eigen_values, self.eigen_vectors = np.linalg.eig(self.covariance_matrix)
+#         u, s, vh = np.linalg.svd(X - self.mean_vector, full_matrices=True)
+#         print(u.shape)
+#         print(np.sum(np.power(vh[20,:],2)))
         self.eigen_values = abs(self.eigen_values)
         self.eigen_vectors = abs(self.eigen_vectors)
         self.pca_indices = np.array(-1*self.eigen_values)
@@ -64,7 +67,7 @@ class PCA:
         
         X = X - self.mean_vector
         X = np.dot(X,self.transform_matrix.T)
-        X = X/self.transform_sigma
+#         X = X/self.transform_sigma
         return X
 
 

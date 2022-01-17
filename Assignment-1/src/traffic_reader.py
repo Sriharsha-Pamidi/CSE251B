@@ -11,21 +11,21 @@ def load_traffic(path, kind = 'train', subclass = None):
     images, labels = train['features'], train['labels']
     images = images.reshape((images.shape[0], -1))
 
-    ####added
-    images, labels = train['features'], train['labels']
-    output = filter(lambda x : x[1] == 7 or x[1] == 8 , list(zip(images,labels)))
-    i=-1
-    images=[]
-    labels = []
-    for x in list(output):
-        images += [x[0]]
-        labels += [0] if (x[1] == 7) else [1]
+#     ####added
+#     images, labels = train['features'], train['labels']
+#     output = filter(lambda x : x[1] == 7 or x[1] == 8 , list(zip(images,labels)))
+#     i=-1
+#     images=[]
+#     labels = []
+#     for x in list(output):
+#         images += [x[0]]
+#         labels += [0] if (x[1] == 7) else [1]
     
-    images = np.array(images)
-    labels = np.array(labels)
+#     images = np.array(images)
+#     labels = np.array(labels)
     
-    images = images.reshape((images.shape[0], -1))
+#     images = images.reshape((images.shape[0], -1))
     
-    ####added
+#     ####added
     
     return images, labels
