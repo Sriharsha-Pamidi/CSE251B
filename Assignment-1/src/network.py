@@ -232,5 +232,3 @@ class Network:
 		if self.activation == sigmoid:
 			return np.sum(y == y_pred) / len(y) * 100
 		return (np.sum(y * y_pred)) / y.shape[0] * 100
-		
-		pass
