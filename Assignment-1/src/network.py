@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import data
+from sklearn.metrics import confusion_matrix
 
 """
 NOTE
@@ -56,14 +57,20 @@ def softmax_gradient(w, X, Y):
 	return dw
 
 
+def stochastic_softmax_gradient(w, x, y):
+	A = np.exp(np.dot(x, w)) / np.sum(np.exp(np.dot(x, w)))
+	difference = y - A
+	dw = -(np.multiply(x.reshape(x.shape[0], 1), difference)/ x.shape[0])
+	return dw
+
+
 def plot_Q2(train_k_cost, validation_k_cost):
 	train_k_cost = np.array(train_k_cost)
-	mean_train = train_k_cost.mean(axis=1)
-	std_train = train_k_cost.std(axis=1)
-	
+	mean_train = train_k_cost.mean(axis=0)
+	std_train = train_k_cost.std(axis=0)
 	validation_k_cost = np.array(validation_k_cost)
-	mean_validation = validation_k_cost.mean(axis=1)
-	std_validation = validation_k_cost.std(axis=1)
+	mean_validation = validation_k_cost.mean(axis=0)
+	std_validation = validation_k_cost.std(axis=0)
 	
 	fig1 = plt.figure()
 	ax1 = fig1.add_subplot(111)
@@ -81,31 +88,46 @@ def plot_Q2(train_k_cost, validation_k_cost):
 	ax1.legend(handles=[tc_plt, vc_plt])
 	plt.show()
 	
-	# fig3 = plt.figure()
-	# ax1 = fig3.add_subplot(111)
-	# ax1.set_title('error bar check')
-	# tc_plt, = ax1.errorbar([50, 100, 150, 200, 250, 300], mean_train, , label='Training Cost')
-	# vc_plt, = ax1.errorbar([50, 100, 150, 200, 250, 300], mean_validation, label='Validation Cost')
-	# ax1.legend(handles=[tc_plt, vc_plt])
-	# plt.show()
+	fig3 = plt.figure()
+	ax1 = fig3.add_subplot(111)
+	ax1.set_title('error bar cost')
+	tc_plt = ax1.errorbar([50, 100, 150, 200, 250, 299], [mean_train[x] for x in [50, 100, 150, 200, 250, 299]],
+	                      [std_train[x] for x in [50, 100, 150, 200, 250, 299]], label='Training Cost')
+	vc_plt = ax1.errorbar([50, 100, 150, 200, 250, 299], [mean_validation[x] for x in [50, 100, 150, 200, 250, 299]],
+	                      [std_validation[x] for x in [50, 100, 150, 200, 250, 299]], label='Validation Cost')
+	ax1.legend(handles=[tc_plt, vc_plt])
+	plt.show()
 
 
-def plot_Q4(train_k_acc,validation_k_acc):
-
+def plot_Q4(train_k_best_acc, validation_k_best_acc, train_k_acc, validation_k_acc):
 	fig1 = plt.figure()
 	ax1 = fig1.add_subplot(111)
 	ax1.set_title('accuracy over the k folds')
-	tc_plt, = ax1.plot(train_k_acc, label='Training Accuracy')
-	vc_plt, = ax1.plot(validation_k_acc, label='Validation Accuracy')
+	tc_plt, = ax1.plot(train_k_best_acc, label='Training Accuracy')
+	vc_plt, = ax1.plot(validation_k_best_acc, label='Validation Accuracy')
 	ax1.legend(handles=[tc_plt, vc_plt])
 	plt.show()
-	pass
+	
+	train_k_acc = np.array(train_k_acc)
+	mean_train = train_k_acc.mean(axis=0)
+	std_train = train_k_acc.std(axis=0)
+	
+	validation_k_acc = np.array(validation_k_acc)
+	mean_validation = validation_k_acc.mean(axis=0)
+	std_validation = validation_k_acc.std(axis=0)
+	
+	fig2 = plt.figure()
+	ax1 = fig2.add_subplot(111)
+	ax1.set_title('error bar Accuracy')
+	tc_plt = ax1.errorbar([50, 100, 150, 200, 250, 299], [mean_train[x] for x in [50, 100, 150, 200, 250, 299]],
+	                      [std_train[x] for x in [50, 100, 150, 200, 250, 299]], label='Training Accuracy')
+	vc_plt = ax1.errorbar([50, 100, 150, 200, 250, 299], [mean_validation[x] for x in [50, 100, 150, 200, 250, 299]],
+	                      [std_validation[x] for x in [50, 100, 150, 200, 250, 299]], label='Validation Accuracy')
+	ax1.legend(handles=[tc_plt, vc_plt])
+	plt.show()
 
 
-def plot_Q5b(train_epoch_costs,validation_epoch_costs):
-	train_epoch_costs = np.array(train_epoch_costs)
-	validation_epoch_costs = np.array(validation_epoch_costs)
-
+def plot_Q5b(train_epoch_costs, validation_epoch_costs, train_epoch_acc, validation_epoch_acc):
 	fig1 = plt.figure()
 	ax1 = fig1.add_subplot(111)
 	ax1.set_title('cost for 80-10-10 split')
@@ -113,7 +135,14 @@ def plot_Q5b(train_epoch_costs,validation_epoch_costs):
 	vc_plt, = ax1.plot(validation_epoch_costs, label='Validation cost')
 	ax1.legend(handles=[tc_plt, vc_plt])
 	plt.show()
-	pass
+	
+	fig2 = plt.figure()
+	ax1 = fig2.add_subplot(111)
+	ax1.set_title('accuracy for 80-10-10 split')
+	tc_plt, = ax1.plot(train_epoch_acc, label='Training accuracy')
+	vc_plt, = ax1.plot(validation_epoch_acc, label='Validation accuracy')
+	ax1.legend(handles=[tc_plt, vc_plt])
+	plt.show()
 
 
 class Network:
@@ -139,6 +168,81 @@ class Network:
 	def __call__(self, X):
 		return self.forward(X)
 	
+	def train_stochastic(self, dataset):
+		
+		train_k_cost = []
+		validation_k_cost = []
+		test_k_cost = []
+		
+		train_k_best_acc = []
+		validation_k_best_acc = []
+		test_k_best_acc = []
+		
+		train_k_acc = []
+		validation_k_acc = []
+		test_k_acc = []
+		
+		for k in range(self.hyperparameters.k_folds):
+			train, valid, test = next(data.generate_k_fold_set(dataset, self.hyperparameters.k_folds))
+			X, y = train
+			X_val, y_val = valid
+			X_test, y_test = test
+			train_epoch_costs = []
+			validation_epoch_costs = []
+			test_epoch_costs = []
+			
+			train_epoch_acc = []
+			validation_epoch_acc = []
+			test_epoch_acc = []
+			
+			train_epoch_best_acc = 0
+			validation_best_epoch_acc = 0
+			test_best_epoch_acc = 0
+			
+			for epoch in range(self.hyperparameters.epochs):
+				print("epoch", epoch)
+				w_best = self.weights
+				# gradient calculation and update
+				count = 0
+				prev_val_cost = float('inf')
+				for k in np.random.permutation(X.shape[0]):
+					dw = stochastic_softmax_gradient(self.weights, X[k], y[k])
+					self.weights = self.weights - self.learning_rate * dw
+					count += 1
+					if count % 500 == 0:
+						validation_cost = self.loss(self.weights, X_val, y_val)
+						print(validation_cost)
+						if round(validation_cost, 5) < round(prev_val_cost, 5):
+							prev_val_cost = validation_cost
+							train_epoch_best_acc = self.test((X, y))
+							validation_best_epoch_acc = self.test((X_val, y_val))
+							test_best_epoch_acc = self.test((X_test, y_test))
+						else:
+							print('early stopping')
+							break
+				
+				validation_cost = self.loss(self.weights, X_val, y_val)
+				train_epoch_costs.append(self.loss(self.weights, X, y))
+				validation_epoch_costs.append(validation_cost)
+				test_epoch_costs.append(self.loss(self.weights, X_test, y_test))
+				train_epoch_acc.append(self.test((X, y)))
+				validation_epoch_acc.append(self.test((X_val, y_val)))
+				test_epoch_acc.append(self.test((X_test, y_test)))
+			
+			train_k_cost.append(train_epoch_costs)
+			validation_k_cost.append(validation_epoch_costs)
+			test_k_cost.append(test_best_epoch_acc)
+			train_k_best_acc.append(train_epoch_best_acc)
+			validation_k_best_acc.append(validation_best_epoch_acc)
+			test_k_best_acc.append(test_epoch_acc)
+			train_k_acc.append(train_epoch_acc)
+			validation_k_acc.append(validation_epoch_acc)
+			test_k_acc.append(test_epoch_acc)
+		
+		# plot_Q2(train_k_cost, validation_k_cost)
+		# plot_Q4(train_k_best_acc, validation_k_best_acc, train_k_acc, validation_k_acc)
+		return sum(train_k_best_acc) / len(train_k_best_acc)  # , self.test_cm()
+	
 	def train(self, dataset, k_fold = True):
 		
 		train_k_cost = []
@@ -154,7 +258,7 @@ class Network:
 		test_k_acc = []
 		
 		for k in range(self.hyperparameters.k_folds):
-			train, valid, test = data.generate_split_dataset(dataset,0.8)
+			train, valid, test = data.generate_split_dataset(dataset, 0.8)
 			if k_fold:
 				train, valid, test = next(data.generate_k_fold_set(dataset, self.hyperparameters.k_folds))
 			X, y = train
@@ -197,6 +301,7 @@ class Network:
 					validation_best_epoch_acc = self.test((X_val, y_val))
 					test_best_epoch_acc = self.test((X_test, y_test))
 				else:
+					print('early stopping')
 					break
 				
 				self.weights = w_best
@@ -217,11 +322,11 @@ class Network:
 				break
 		if k_fold:
 			plot_Q2(train_k_cost, validation_k_cost)
-			plot_Q4(train_k_best_acc,validation_k_best_acc)
+			plot_Q4(train_k_best_acc, validation_k_best_acc, train_k_acc, validation_k_acc)
 		else:
-			plot_Q5b(train_k_cost[0],validation_k_cost[0])
-			
-		return sum(train_k_best_acc) / len(train_k_best_acc)
+			plot_Q5b(train_k_cost[0], validation_k_cost[0], train_k_acc[0], validation_k_acc[0])
+		
+		return sum(train_k_best_acc) / len(train_k_best_acc)  # , self.test_cm()
 	
 	def test(self, minibatch):
 		X, y = minibatch
@@ -231,3 +336,9 @@ class Network:
 		if self.activation == sigmoid:
 			return np.sum(y == y_pred) / len(y) * 100
 		return (np.sum(y * y_pred)) / y.shape[0] * 100
+	
+	def test_cm(self, minibatch):
+		X, y = minibatch
+		y_pred = self.forward(X)
+		cm = confusion_matrix(y.argmax(axis=1), y_pred.argmax(axis=1))
+		return cm

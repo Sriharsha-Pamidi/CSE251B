@@ -2,21 +2,24 @@ import argparse
 import network
 from network import Network
 import data
-from pca import PCA
+# from pca import PCA
 import numpy as np
-# from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA
 from sklearn import preprocessing
+import matplotlib.pyplot as plt
 
 
 def logistic_regression_classes(hyperparameters, classes):
 	X, y = data.load_traffic_data(True, classes)
 	
 	scaler = preprocessing.StandardScaler().fit(X)
-	dataset = (scaler.transform(X), np.array([8-x for x in y]))
+	dataset = (scaler.transform(X), np.array([8 - x for x in y]))
+	# dataset = (scaler.transform(X), np.array([20 - x for x in y]))
 	
 	# PCA
 	pca_instace = PCA(hyperparameters.in_dim)
 	pca_instace.fit(dataset[0])
+	# plot_pca_components(pca_instace.components_)
 	dataset = (data.append_bias(pca_instace.transform(dataset[0])), dataset[1])
 	
 	# training
@@ -27,6 +30,17 @@ def logistic_regression_classes(hyperparameters, classes):
 	
 	return test_accuracy
 
+
+# def plot_pca_components(compo):
+# 		fig, axs = plt.subplots(1, 4)
+# 		images = [compo[i,:].reshape(32, 32) for i in range(4)]
+#
+# 		for i, ax in enumerate(axs.flatten()):
+# 			if i < len(images):
+# 				ax.imshow(images[i])
+# 			else:
+# 				ax.remove()
+# 		plt.show()
 
 def softmax_regression(hyperparameters):
 	X, y = data.load_traffic_data(True)
@@ -41,7 +55,8 @@ def softmax_regression(hyperparameters):
 	
 	# training
 	model = Network(hyperparameters, network.softmax, network.multiclass_cross_entropy, network.softmax_gradient)
-	test_accuracy = model.train(dataset)
+	# test_accuracy = model.train(dataset)
+	test_accuracy = model.train_stochastic(dataset)
 	print("test accuracy-", test_accuracy)
 	
 	return test_accuracy
@@ -49,10 +64,11 @@ def softmax_regression(hyperparameters):
 
 def main(hyperparameters):
 	# Q1
-	logistic_regression_classes(hyperparameters, [7, 8])
+	# logistic_regression_classes(hyperparameters, [7, 8])
+	# logistic_regression_classes(hyperparameters, [19, 20])
 	
 	# Q2
-	# softmax_regression(hyperparameters)
+	softmax_regression(hyperparameters)
 	
 	pass
 
