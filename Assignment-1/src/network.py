@@ -117,7 +117,6 @@ def plot_Q5b(train_epoch_costs,validation_epoch_costs):
 
 
 class Network:
-	global w_best
 	
 	def __init__(self, hyperparameters, activation, loss, gradient):
 		self.hyperparameters = hyperparameters
