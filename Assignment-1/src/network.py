@@ -217,7 +217,7 @@ class Network:
 			if not k_fold:
 				break
 		if k_fold:
-			# plot_Q2(train_k_cost, validation_k_cost)
+			plot_Q2(train_k_cost, validation_k_cost)
 			plot_Q4(train_k_best_acc,validation_k_best_acc)
 		else:
 			plot_Q5b(train_k_cost[0],validation_k_cost[0])
