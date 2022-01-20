@@ -93,7 +93,7 @@ class Network:
 		validation_k_acc = []
 		# test_k_acc = []
 		best_weights = []
-		w_best = self.weights
+
 		for k_fold_num in range(self.hyperparameters.k_folds):
 			self.weights = np.zeros((self.hyperparameters.in_dim + 1, self.hyperparameters.out_dim))
 			train, valid, test = next(data.generate_k_fold_set(dataset, self.hyperparameters.k_folds))
@@ -125,7 +125,7 @@ class Network:
 					dw = stochastic_softmax_gradient(self.weights, X[k], y[k])
 					self.weights = self.weights - self.learning_rate * dw
 					count += 1
-					if count % 500 == 0:
+					if count % 5000 == 0:
 						validation_cost = self.loss(self.weights, X_val, y_val)
 						print(validation_cost)
 						if validation_cost < prev_val_cost:
@@ -147,6 +147,7 @@ class Network:
 				train_epoch_acc.append(self.test((X, y)))
 				validation_epoch_acc.append(self.test((X_val, y_val)))
 		# test_epoch_acc.append(self.test((X_test, y_test)))
+			
 			best_weights.append(w_best)
 			print("best values for the fold:", train_epoch_best_acc, validation_best_epoch_acc, test_best_epoch_acc)
 			train_k_cost.append(train_epoch_costs)
@@ -161,17 +162,19 @@ class Network:
 			validation_k_acc.append(validation_epoch_acc)
 		# test_k_acc.append(test_epoch_acc)
 		
-		test_k = None
+		X_test_k = np.empty
+		y_test_k = np.empty
 		best_model = test_k_best_acc.index(min(test_k_best_acc))
 		for p in range(best_model):
 			train, valid, test_k = next(data.generate_k_fold_set(dataset, self.hyperparameters.k_folds))
-		X_test, y_test = test_k
-		confusion_m = test_cm(self.activation, best_weights[best_model], X_test, y_test)
+			X_test_k, y_test_k = test_k
+		print(X_test_k.shape)
+		confusion_m = test_cm(self.activation, best_weights[best_model] ,X_test_k, y_test_k)
 		
 		filename = f"file_stochastic_{self.activation}_{self.hyperparameters.in_dim}_" \
 		           f"{self.hyperparameters.out_dim}_{self.hyperparameters.epochs}_{True}_{aligned}.pkl"
 		
-		with open(filename, 'w') as f:
+		with open(filename, 'wb') as f:
 			pickle.dump([self.weights, self.hyperparameters.epochs, train_k_cost, validation_k_cost, train_k_acc,
 			             validation_k_acc, confusion_m], f)
 		
@@ -191,7 +194,7 @@ class Network:
 		# test_k_acc = []
 		
 		best_weights = []
-		w_best = self.weights
+
 		for k_fold_num in range(self.hyperparameters.k_folds):
 			self.weights = np.zeros((self.hyperparameters.in_dim + 1, self.hyperparameters.out_dim))
 			train, valid, test = data.generate_split_dataset(dataset, 0.8)
@@ -261,12 +264,18 @@ class Network:
 			if not k_fold:
 				break
 		
-		test_k = None
-		best_model = test_k_best_acc.index(min(test_k_best_acc))
-		for p in range(best_model):
-			train, valid, test_k = next(data.generate_k_fold_set(dataset, self.hyperparameters.k_folds))
-		X_test, y_test = test_k
-		confusion_m = test_cm(self.activation, best_weights[best_model] ,X_test, y_test)
+		if k_fold:
+			X_test_k = np.empty
+			y_test_k= np.empty
+			best_model = test_k_best_acc.index(min(test_k_best_acc))
+			for p in range(best_model):
+				train, valid, test_k = next(data.generate_k_fold_set(dataset, self.hyperparameters.k_folds))
+				X_test_k, y_test_k = test_k
+			confusion_m = test_cm(self.activation, best_weights[best_model] ,X_test_k, y_test_k)
+		else:
+			train, valid, test_k = data.generate_split_dataset(dataset, 0.8)
+			X_test_k, y_test_k = test_k
+			confusion_m = test_cm(self.activation, best_weights[0], X_test_k, y_test_k)
 		
 		filename = f"file_{self.activation}_{self.hyperparameters.in_dim}_" \
 		           f"{self.hyperparameters.out_dim}_{self.hyperparameters.epochs}_{k_fold}_{aligned}.pkl"

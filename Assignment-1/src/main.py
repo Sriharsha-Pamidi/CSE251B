@@ -126,12 +126,13 @@ def make_plots(file,k_fold):
 		plot_k_acc_stddev(train_k_acc, validation_k_acc, epochs)
 	else:
 		plot_performance(train_k_cost[0], validation_k_cost[0], train_k_acc[0], validation_k_acc[0])
+	plot_confusion_matrix(confusion_m)
 	
 
 def main(hyperparameters):
 	k_fold = True
 	alinged = True
-	stochastic = False
+	stochastic = True
 	# Q1
 	# file1 = logistic_regression_classes(hyperparameters, [2, 3], k_fold, alinged)
 	# file2 = logistic_regression_classes(hyperparameters, [19, 20], k_fold, alinged)
