@@ -24,8 +24,8 @@ def logistic_regression_classes(hyperparameters, classes):
 	
 	# training
 	model = Network(hyperparameters, network.sigmoid, network.binary_cross_entropy, network.logistic_gradient)
-	test_accuracy = model.train(dataset)
-	# test_accuracy = model.train(dataset, False)
+	# test_accuracy = model.train(dataset)
+	test_accuracy = model.train(dataset, False)
 	print("test accuracy-", test_accuracy)
 	
 	return test_accuracy
@@ -55,8 +55,8 @@ def softmax_regression(hyperparameters):
 	
 	# training
 	model = Network(hyperparameters, network.softmax, network.multiclass_cross_entropy, network.softmax_gradient)
-	# test_accuracy = model.train(dataset)
-	test_accuracy = model.train_stochastic(dataset)
+	test_accuracy = model.train(dataset,False)
+	# test_accuracy = model.train_stochastic(dataset)
 	print("test accuracy-", test_accuracy)
 	
 	return test_accuracy
@@ -64,11 +64,11 @@ def softmax_regression(hyperparameters):
 
 def main(hyperparameters):
 	# Q1
-	# logistic_regression_classes(hyperparameters, [7, 8])
+	logistic_regression_classes(hyperparameters, [7, 8])
 	# logistic_regression_classes(hyperparameters, [19, 20])
 	
 	# Q2
-	softmax_regression(hyperparameters)
+	# softmax_regression(hyperparameters)
 	
 	pass
 
@@ -87,9 +87,8 @@ parser.add_argument('--in-dim', type=int, default=32 * 32,
                     help='number of principal components to use')
 parser.add_argument('--out-dim', type=int, default=43,
                     help='number of outputs')
-parser.add_argument('--k-folds', type=int, default=5,
+parser.add_argument('--k-folds', type=int, default=10,
                     help='number of folds for cross-validation')
-
 
 hyperparameters = parser.parse_args()
 main(hyperparameters)

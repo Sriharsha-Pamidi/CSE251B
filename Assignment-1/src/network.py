@@ -60,7 +60,7 @@ def softmax_gradient(w, X, Y):
 def stochastic_softmax_gradient(w, x, y):
 	A = np.exp(np.dot(x, w)) / np.sum(np.exp(np.dot(x, w)))
 	difference = y - A
-	dw = -(np.multiply(x.reshape(x.shape[0], 1), difference)/ x.shape[0])
+	dw = -(np.multiply(x.reshape(x.shape[0], 1), difference) / x.shape[0])
 	return dw
 
 
@@ -169,7 +169,6 @@ class Network:
 		return self.forward(X)
 	
 	def train_stochastic(self, dataset):
-		
 		train_k_cost = []
 		validation_k_cost = []
 		test_k_cost = []
@@ -182,7 +181,9 @@ class Network:
 		validation_k_acc = []
 		test_k_acc = []
 		
-		for k in range(self.hyperparameters.k_folds):
+		for k_fold_num in range(self.hyperparameters.k_folds):
+			self.weights = np.random.normal(init_mue, init_var,
+			                                size=(self.hyperparameters.in_dim + 1, self.hyperparameters.out_dim))
 			train, valid, test = next(data.generate_k_fold_set(dataset, self.hyperparameters.k_folds))
 			X, y = train
 			X_val, y_val = valid
@@ -220,31 +221,30 @@ class Network:
 						else:
 							print('early stopping')
 							break
-				
-				validation_cost = self.loss(self.weights, X_val, y_val)
-				train_epoch_costs.append(self.loss(self.weights, X, y))
-				validation_epoch_costs.append(validation_cost)
-				test_epoch_costs.append(self.loss(self.weights, X_test, y_test))
-				train_epoch_acc.append(self.test((X, y)))
-				validation_epoch_acc.append(self.test((X_val, y_val)))
-				test_epoch_acc.append(self.test((X_test, y_test)))
-			
-			train_k_cost.append(train_epoch_costs)
-			validation_k_cost.append(validation_epoch_costs)
-			test_k_cost.append(test_best_epoch_acc)
-			train_k_best_acc.append(train_epoch_best_acc)
-			validation_k_best_acc.append(validation_best_epoch_acc)
-			test_k_best_acc.append(test_epoch_acc)
-			train_k_acc.append(train_epoch_acc)
-			validation_k_acc.append(validation_epoch_acc)
-			test_k_acc.append(test_epoch_acc)
+		
+			validation_cost = self.loss(self.weights, X_val, y_val)
+			train_epoch_costs.append(self.loss(self.weights, X, y))
+			validation_epoch_costs.append(validation_cost)
+			test_epoch_costs.append(self.loss(self.weights, X_test, y_test))
+			train_epoch_acc.append(self.test((X, y)))
+			validation_epoch_acc.append(self.test((X_val, y_val)))
+			test_epoch_acc.append(self.test((X_test, y_test)))
+		
+		train_k_cost.append(train_epoch_costs)
+		validation_k_cost.append(validation_epoch_costs)
+		test_k_cost.append(test_best_epoch_acc)
+		train_k_best_acc.append(train_epoch_best_acc)
+		validation_k_best_acc.append(validation_best_epoch_acc)
+		test_k_best_acc.append(test_epoch_acc)
+		train_k_acc.append(train_epoch_acc)
+		validation_k_acc.append(validation_epoch_acc)
+		test_k_acc.append(test_epoch_acc)
 		
 		# plot_Q2(train_k_cost, validation_k_cost)
 		# plot_Q4(train_k_best_acc, validation_k_best_acc, train_k_acc, validation_k_acc)
 		return sum(train_k_best_acc) / len(train_k_best_acc)  # , self.test_cm()
 	
-	def train(self, dataset, k_fold = True):
-		
+	def train(self, dataset, k_fold=True):
 		train_k_cost = []
 		validation_k_cost = []
 		test_k_cost = []
@@ -257,7 +257,8 @@ class Network:
 		validation_k_acc = []
 		test_k_acc = []
 		
-		for k in range(self.hyperparameters.k_folds):
+		for k_fold_num in range(self.hyperparameters.k_folds):
+			self.weights = np.random.normal(init_mue, init_var,size=(self.hyperparameters.in_dim + 1, self.hyperparameters.out_dim))
 			train, valid, test = data.generate_split_dataset(dataset, 0.8)
 			if k_fold:
 				train, valid, test = next(data.generate_k_fold_set(dataset, self.hyperparameters.k_folds))
@@ -275,10 +276,10 @@ class Network:
 			train_epoch_best_acc = 0
 			validation_best_epoch_acc = 0
 			test_best_epoch_acc = 0
-
+			
+			prev_val_cost = float("inf")
 			for epoch in range(self.hyperparameters.epochs):
 				w_best = self.weights
-				prev_val_cost = float("inf")
 				# gradient calculation and update
 				dw = self.gradient(self.weights, X, y)
 				self.weights = self.weights - self.learning_rate * dw
@@ -294,7 +295,7 @@ class Network:
 				validation_epoch_acc.append(self.test((X_val, y_val)))
 				test_epoch_acc.append(self.test((X_test, y_test)))
 				
-				if round(validation_cost, 5) < round(prev_val_cost, 5):
+				if validation_cost < prev_val_cost:
 					prev_val_cost = validation_cost
 					w_best = self.weights
 					train_epoch_best_acc = self.test((X, y))
@@ -303,16 +304,16 @@ class Network:
 				else:
 					print('early stopping')
 					break
-				
+				print(validation_cost)
 				self.weights = w_best
 			
 			train_k_cost.append(train_epoch_costs)
 			validation_k_cost.append(validation_epoch_costs)
 			test_k_cost.append(test_best_epoch_acc)
-			
+			print("pp",train_epoch_best_acc,validation_best_epoch_acc,test_best_epoch_acc)
 			train_k_best_acc.append(train_epoch_best_acc)
 			validation_k_best_acc.append(validation_best_epoch_acc)
-			test_k_best_acc.append(test_epoch_acc)
+			test_k_best_acc.append(test_best_epoch_acc)
 			
 			train_k_acc.append(train_epoch_acc)
 			validation_k_acc.append(validation_epoch_acc)
@@ -342,3 +343,9 @@ class Network:
 		y_pred = self.forward(X)
 		cm = confusion_matrix(y.argmax(axis=1), y_pred.argmax(axis=1))
 		return cm
+
+#
+# def confusion_matrix(y_true, y_pred):
+#     labels = set(np.concatenate(y_true, y_pred))
+# 	sample_weight = np.ones(y_true.shape[0], dtype=np.int64)
+# 	n_labels = labels.size
