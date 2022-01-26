@@ -28,7 +28,7 @@ def binary_cross_entropy(w, X, Y):
 	J = -1 * (np.multiply(Y, np.clip(np.log(val), -100, 100)) + np.multiply((1 - Y),
 	                                                                        np.clip(np.log(1 - val), -100, 100)))
 	cost = np.sum(J) / X.shape[0]
-	return cost
+	return cost / X.shape[0]
 
 
 def multiclass_cross_entropy(w, X, y):
@@ -196,7 +196,7 @@ class Network:
 		best_weights = []
 
 		for k_fold_num in range(self.hyperparameters.k_folds):
-			self.weights = np.zeros((self.hyperparameters.in_dim + 1, self.hyperparameters.out_dim))
+			self.weights = np.ones((self.hyperparameters.in_dim + 1, self.hyperparameters.out_dim))
 			train, valid, test = data.generate_split_dataset(dataset, 0.8)
 			if k_fold:
 				train, valid, test = next(data.generate_k_fold_set(dataset, self.hyperparameters.k_folds))
@@ -264,6 +264,7 @@ class Network:
 			if not k_fold:
 				break
 		
+		confusion_m = None
 		if k_fold:
 			X_test_k = np.empty
 			y_test_k= np.empty
@@ -271,13 +272,13 @@ class Network:
 			for p in range(best_model):
 				train, valid, test_k = next(data.generate_k_fold_set(dataset, self.hyperparameters.k_folds))
 				X_test_k, y_test_k = test_k
-			confusion_m = test_cm(self.activation, best_weights[best_model] ,X_test_k, y_test_k)
+			# confusion_m = test_cm(self.activation, best_weights[best_model] ,X_test_k, y_test_k)
 		else:
 			train, valid, test_k = data.generate_split_dataset(dataset, 0.8)
 			X_test_k, y_test_k = test_k
-			confusion_m = test_cm(self.activation, best_weights[0], X_test_k, y_test_k)
+			# confusion_m = test_cm(self.activation, best_weights[0], X_test_k, y_test_k)
 		
-		filename = f"file_{self.activation}_{self.hyperparameters.in_dim}_" \
+		filename = f"../data/file_{self.activation}_{self.hyperparameters.in_dim}_" \
 		           f"{self.hyperparameters.out_dim}_{self.hyperparameters.epochs}_{k_fold}_{aligned}.pkl"
 		
 		with open(filename, 'wb') as f:

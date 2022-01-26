@@ -5,8 +5,12 @@ import data
 import pickle
 from pca import PCA
 import numpy as np
+from sklearn.decomposition import PCA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn import preprocessing
 import matplotlib.pyplot as plt
+from scipy.stats import norm
+
 
 
 def logistic_regression_classes(hyperparameters, classes, k_fold, alinged):
@@ -16,7 +20,7 @@ def logistic_regression_classes(hyperparameters, classes, k_fold, alinged):
 	# PCA
 	pca_instace = PCA(hyperparameters.in_dim)
 	pca_instace.fit(dataset[0])
-	pca_instace.plot_pca_components(4)
+	# pca_instace.plot_pca_components(4)
 	dataset = (data.append_bias(pca_instace.transform(dataset[0])), dataset[1])
 	# training
 	model = Network(hyperparameters, network.sigmoid, network.binary_cross_entropy, network.logistic_gradient)
@@ -83,8 +87,10 @@ def plot_k_acc_stddev(train_k_acc, validation_k_acc, epochs):
 	arr = [y * epochs / 6 for y in range(6)]
 	tc_plt = ax1.errorbar([y * epochs / 6 for y in range(6)], [list(mean_train)[int(x)] for x in arr],
 	                      [list(std_train)[int(x)] for x in arr], label='Training Accuracy')
+	                      # [2,4,2.33,2.2,2.3,2.7], label='Training Accuracy')
 	vc_plt = ax1.errorbar(arr, [list(mean_validation)[int(x)] for x in arr],
 	                      [list(std_validation)[int(x)] for x in arr], label='Validation Accuracy')
+	                      # [2,4,2.33,2.2,2.3,2.7], label='Validation Accuracy')
 	ax1.legend(handles=[tc_plt, vc_plt])
 	plt.show()
 
@@ -126,23 +132,24 @@ def make_plots(file,k_fold):
 		plot_k_acc_stddev(train_k_acc, validation_k_acc, epochs)
 	else:
 		plot_performance(train_k_cost[0], validation_k_cost[0], train_k_acc[0], validation_k_acc[0])
-	plot_confusion_matrix(confusion_m)
+	# plot_confusion_matrix(confusion_m)
 	
 
 def main(hyperparameters):
 	k_fold = True
 	alinged = True
 	stochastic = True
+	
 	# Q1
-	# file1 = logistic_regression_classes(hyperparameters, [2, 3], k_fold, alinged)
-	# file2 = logistic_regression_classes(hyperparameters, [19, 20], k_fold, alinged)
+	# file1 = logistic_regression_classes(hyperparameters, [7, 8], k_fold, alinged)
+	file2 = logistic_regression_classes(hyperparameters, [19, 20], k_fold, alinged)
 	
 	# Q2
-	file3 = softmax_regression(hyperparameters, k_fold, alinged, stochastic)
+	# file3 = softmax_regression(hyperparameters, k_fold, alinged, stochastic)
 	
 	# make_plots(file1, k_fold)
-	# make_plots(file2, k_fold)
-	make_plots(file3, k_fold)
+	make_plots(file2, k_fold)
+	# make_plots(file3, k_fold)
 	
 	pass
 
