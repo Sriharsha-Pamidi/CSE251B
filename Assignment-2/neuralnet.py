@@ -36,8 +36,7 @@ def one_hot_encoding(labels, num_classes=10):
     """
     TODO: Encode labels using one hot encoding and return them.
     """
-    encoded_labels = np.array([[1 if label == i else 0 for i in range(num_classes)] for label in labels])
-    return encoded_labels
+    return np.array([[1 if label == i else 0 for i in range(num_classes)] for label in labels])
 
 
 def load_data(path, mode='train'):
@@ -171,13 +170,13 @@ class Activation():
         """
         TODO: Implement ReLU here.
         """
-        return np.maximum(0, x)
+        return x * (x > 0)
 
     def leakyReLU(self, x):
         """
         TODO: Implement leaky ReLU here.
         """
-        return np.maximum(0.1 * x, x)
+        return np.where(x > 0, x, x * 0.1)
 
     def grad_sigmoid(self):
         """
@@ -189,7 +188,7 @@ class Activation():
         """
         TODO: Compute the gradient for tanh here.
         """
-        return 1 - np.power(self.tanh(self.x), 2)
+        return 1 - self.tanh(self.x) ** 2
 
     def grad_ReLU(self):
         """
