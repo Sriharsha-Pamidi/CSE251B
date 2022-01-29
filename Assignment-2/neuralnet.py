@@ -9,7 +9,7 @@
 # https://scipy.org/install.html
 ################################################################################
 
-import os, gzip
+import os
 import yaml
 import numpy as np
 import pickle
@@ -46,36 +46,36 @@ def load_data(path, mode='train'):
     """
     def unpickle(file):
         with open(file, 'rb') as fo:
-            dict = pickle.load(fo, encoding='bytes')
-        return dict
+            u_dict = pickle.load(fo, encoding='bytes')
+        return u_dict
 
     cifar_path = os.path.join(path, "cifar-10-batches-py")
 
     if mode == "train":
         images = []
         labels = []
-        for i in range(1,6):
+        for i in range(1, 6):
             images_dict = unpickle(os.path.join(cifar_path, f"data_batch_{i}"))
             data = images_dict[b'data']
             label = images_dict[b'labels']
             labels.extend(label)
             images.extend(data)
         normalized_images = normalize_data(np.array(images))
-        one_hot_labels    = one_hot_encoding(labels, num_classes=10) #(n,10)
+        one_hot_labels = one_hot_encoding(labels, num_classes=10)
         return np.array(normalized_images), np.array(one_hot_labels)
     elif mode == "test":
         test_images_dict = unpickle(os.path.join(cifar_path, f"test_batch"))
         test_data = test_images_dict[b'data']
         test_labels = test_images_dict[b'labels']
         normalized_images = normalize_data(np.array(test_data))
-        one_hot_labels    = one_hot_encoding(test_labels, num_classes=10) #(n,10)
+        one_hot_labels = one_hot_encoding(test_labels, num_classes=10)
         return np.array(normalized_images), np.array(one_hot_labels)
     else:
         val_images_dict = unpickle(os.path.join(cifar_path, f"data_batch_{6}"))
         val_images = val_images_dict[b'data']
         val_labels = val_images_dict[b'labels']
         normalized_images = normalize_data(np.array(val_images))
-        one_hot_labels    = one_hot_encoding(val_labels, num_classes=10) #(n,10)
+        one_hot_labels = one_hot_encoding(val_labels, num_classes=10)
         return np.array(normalized_images), np.array(one_hot_labels)
 
 
@@ -85,7 +85,7 @@ def softmax(x):
     Remember to take care of the overflow condition.
     """
     exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
-    return (exp_x / np.sum(exp_x, axis=1, keepdims=True))
+    return exp_x / np.sum(exp_x, axis=1, keepdims=True)
 
 
 class Activation():
@@ -94,9 +94,9 @@ class Activation():
     your neural network layers.
 
     Example (for sigmoid):
-        >>> sigmoid_layer = Activation("sigmoid")
-        >>> z = sigmoid_layer(a)
-        >>> gradient = sigmoid_layer.backward(delta=1.0)
+        # >>> sigmoid_layer = Activation("sigmoid")
+        # >>> z = sigmoid_layer(a)
+        # >>> gradient = sigmoid_layer.backward(delta=1.0)
     """
 
     def __init__(self, activation_type = "sigmoid"):
@@ -122,6 +122,7 @@ class Activation():
         """
         Compute the forward pass.
         """
+        self.x = a
         if self.activation_type == "sigmoid":
             return self.sigmoid(a)
 
@@ -138,6 +139,8 @@ class Activation():
         """
         Compute the backward pass.
         """
+        grad = None
+
         if self.activation_type == "sigmoid":
             grad = self.grad_sigmoid()
 
@@ -204,14 +207,15 @@ class Activation():
         gradient[self.x > 0] = 1
         return gradient
 
+
 class Layer():
     """
     This class implements Fully Connected layers for your neural network.
 
     Example:
-        >>> fully_connected_layer = Layer(784, 100)
-        >>> output = fully_connected_layer(input)
-        >>> gradient = fully_connected_layer.backward(delta=1.0)
+        # >>> fully_connected_layer = Layer(784, 100)
+        # >>> output = fully_connected_layer(input)
+        # >>> gradient = fully_connected_layer.backward(delta=1.0)
     """
 
     def __init__(self, in_units, out_units):
@@ -256,7 +260,7 @@ class Layer():
         computes gradient for its weights and the delta to pass to its previous layers.
         Return self.dx
         """
-        scale_size = self.x.shape[0] * 10 
+        scale_size = self.x.shape[0] * 10
 
         self.d_x = delta.dot(self.w.T)
         self.d_w = -self.x.T.dot(delta) / scale_size
@@ -296,9 +300,9 @@ class Neuralnetwork():
     Create a Neural Network specified by the input configuration.
 
     Example:
-        >>> net = NeuralNetwork(config)
-        >>> output = net(input)
-        >>> net.backward()
+        # >>> net = NeuralNetwork(config)
+        # >>> output = net(input)
+        # >>> net.backward()
     """
 
     def __init__(self, config):
@@ -397,6 +401,7 @@ class Neuralnetwork():
 
         return np.mean(predictions == targets)
 
+
 def generate_batch(x, y, bs=1, shuffle_En=True):
     if shuffle_En:
         index = np.random.permutation(len(x))
@@ -405,6 +410,7 @@ def generate_batch(x, y, bs=1, shuffle_En=True):
     for idx in range(0, len(x) - bs + 1, bs):
         index_final = index[idx:idx + bs]
         yield x[index_final], y[index_final]
+
 
 def train(model, x_train, y_train, x_valid, y_valid, config):
     """
@@ -421,12 +427,7 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
 
     valid_accuracy_max = -float('inf')
     valid_accuracy_decrease = 0
-    train_metrics = {}
-    train_metrics['epoches'] = []
-    train_metrics['train_loss'] = []
-    train_metrics['train_accuracy'] = []
-    train_metrics['valid_loss'] = []
-    train_metrics['valid_accuracy'] = []
+    train_metric = {'epochs': [], 'train_loss': [], 'train_accuracy': [], 'valid_loss': [], 'valid_accuracy': []}
 
     start_time = time.time()
     for epoch in range(epochs):
@@ -434,7 +435,7 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
         for x, y in generate_batch(x_train, y_train, bs=bs, shuffle_En=True):
             train_loss_batch.append(model.forward(x, targets=y)[1])
             model.backward()
-            model.update_parameters()
+            model.updata_parameters()
             train_accuracy_batch.append(model.predict(x, targets=y))
 
         train_loss = np.mean(np.array(train_loss_batch))
@@ -444,13 +445,14 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
 
         if epoch % 10 == 0:
             print('Epoch {}, Time {} seconds'.format(epoch + 1, time.time() - start_time))
-            print('Train_loss = {:.4f}, Valid_loss = {:.4f}, Valid_accuracy = {:.4f}'.format(train_loss, valid_loss, valid_accuracy))
+            print('Train_loss = {:.4f}, Valid_loss = {:.4f}, Valid_accuracy = {:.4f}'.format(train_loss, valid_loss,
+                                                                                             valid_accuracy))
 
-        train_metrics['epoches'].append(epoch + 1)
-        train_metrics['train_loss'].append(train_loss)
-        train_metrics['train_accuracy'].append(train_accuracy)
-        train_metrics['valid_loss'].append(valid_loss)
-        train_metrics['valid_accuracy'].append(valid_accuracy)
+        train_metric['epochs'].append(epoch + 1)
+        train_metric['train_loss'].append(train_loss)
+        train_metric['train_accuracy'].append(train_accuracy)
+        train_metric['valid_loss'].append(valid_loss)
+        train_metric['valid_accuracy'].append(valid_accuracy)
 
         if valid_accuracy > valid_accuracy_max:
             model.store_parameters()
@@ -463,15 +465,16 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
             if valid_accuracy_decrease > epoch_threshold:
                 break
 
-    return train_metrics
+    return train_metric
 
 
-def test(model, X_test, y_test):
+def test(model, x_test, y_test):
     """
     TODO: Calculate and return the accuracy on the test set.
     """
 
-    return model.predict(X_test, y_test)
+    return model.predict(x_test, y_test)
+
 
 def data_split(x, y, ratio=0.1):
     val_num = int(np.floor(x.shape[0] * ratio))
@@ -495,11 +498,11 @@ if __name__ == "__main__":
     config = load_config("")
 
     # Create the model
-    model  = Neuralnetwork(config)
+    model = Neuralnetwork(config)
 
     # Load the data
     x_train, y_train = load_data(path="./data", mode="train")
-    x_test,  y_test  = load_data(path="./data", mode="test")
+    x_test,  y_test = load_data(path="./data", mode="test")
     
     x_train = normalize_data(x_train)
     x_test = normalize_data(x_test)
@@ -507,7 +510,6 @@ if __name__ == "__main__":
     # TODO: Create splits for validation data here.
     # x_val, y_val = ...
     x_train, y_train, x_valid, y_valid = data_split(x_train, y_train, 0.2)
-
 
     # TODO: train the model
     train_metrics = train(model, x_train, y_train, x_valid, y_valid, config)
@@ -536,3 +538,4 @@ if __name__ == "__main__":
     plt.ylabel('Accuracy')
     plt.legend()
     plt.show()
+    
