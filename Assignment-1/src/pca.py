@@ -1,5 +1,5 @@
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 class PCA:
 	"""
@@ -38,14 +38,11 @@ class PCA:
 		self.mean_vector = np.mean(X, axis=0)
 		self.covariance_matrix = np.cov(X.T)
 		self.eigen_values, self.eigen_vectors = np.linalg.eig(self.covariance_matrix)
-		#         u, s, vh = np.linalg.svd(X - self.mean_vector, full_matrices=True)
-		#         print(u.shape)
-		#         print(np.sum(np.power(vh[20,:],2)))
-		self.eigen_values = abs(self.eigen_values)
-		self.eigen_vectors = abs(self.eigen_vectors)
+		self.eigen_values = np.real(self.eigen_values)
+		self.eigen_vectors = np.real(self.eigen_vectors)
 		self.pca_indices = np.array(-1 * self.eigen_values)
 		self.pca_indices = self.pca_indices.argsort()[:self.num_components]
-		self.transform_matrix = self.eigen_vectors.T[self.pca_indices]
+		self.transform_matrix = self.eigen_vectors[:,self.pca_indices]
 		self.transform_sigma = np.sqrt(self.eigen_values[self.pca_indices])
 		pass
 	
@@ -53,7 +50,7 @@ class PCA:
 		"""
         Use the internal parameters set with `fit` to transform data.
 
-        Make sure you are using internal parameters computed during `fit` 
+        Make sure you are using internal parameters computed during `fit`
         and not recomputing parameters every time!
 
         Parameters
@@ -67,10 +64,23 @@ class PCA:
         """
 		
 		X = X - self.mean_vector
-		X = np.dot(X, self.transform_matrix.T)
-		#         X = X/self.transform_sigma
+		X = np.dot(X, self.transform_matrix)
+		# X = X/self.transform_sigma
 		return X
 	
 	def fit_transform(self, X):
 		self.fit(X)
 		return self.transform(X)
+	
+	def plot_pca_components(self,n):
+		
+		fig, axs = plt.subplots(1,4)
+		images = [self.transform_matrix[:, i].reshape(32, 32) for i in range(4)]
+		
+		for i,ax in enumerate(axs.flatten()):
+			if i < len(images):
+				ax.imshow(images[i])
+			else:
+				ax.remove()
+		plt.show()
+		
