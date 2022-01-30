@@ -1,92 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="cc20056c-f68e-41cb-b9df-4dfc31e92f3d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Assignment-1/251B_PA1_report.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1006520d0&gt;_75_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10097a0d0&gt;_69_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x100b310d0&gt;_100_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x100f0f0d0&gt;_100_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1019c00d0&gt;_100_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x101f1e0d0&gt;_50_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x101f430d0&gt;_50_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1027030d0&gt;_50_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x102a270d0&gt;_75_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x102bd80d0&gt;_75_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x102ccb0d0&gt;_100_1_300_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x102e210d0&gt;_60_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x102fa80d0&gt;_60_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1030170d0&gt;_50_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1031480d0&gt;_69_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1036df0d0&gt;_60_1_50_True_False.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x103a800d0&gt;_100_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x103c260d0&gt;_69_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1040311f0&gt;_75_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1042110d0&gt;_50_1_100_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1042b80d0&gt;_60_1_300_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1043ef160&gt;_120_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x104608160&gt;_100_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10567f0d0&gt;_60_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x105b470d0&gt;_75_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1065fa0d0&gt;_100_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1068420d0&gt;_50_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x106e8a0d0&gt;_80_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x106f7a160&gt;_120_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1074491f0&gt;_60_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1076d70d0&gt;_75_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x107a130d0&gt;_100_1_300_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x107adb0d0&gt;_50_1_100_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x107b0c0d0&gt;_60_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1080bb0d0&gt;_100_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10864f0d0&gt;_69_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x108f6e0d0&gt;_60_1_300_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1093990d0&gt;_60_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1095461f0&gt;_75_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1096640d0&gt;_69_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x109e7e0d0&gt;_50_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x109fa00d0&gt;_80_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10a1f30d0&gt;_60_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10a7d10d0&gt;_75_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10b3dfaf0&gt;_60_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10b6bf0d0&gt;_60_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10b6bf0d0&gt;_75_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10b9ef0d0&gt;_100_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10bc010d0&gt;_50_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10bc861f0&gt;_60_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10c0190d0&gt;_60_1_50_True_False.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10c3c8160&gt;_60_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10c5690d0&gt;_69_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10c5990d0&gt;_20_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10cd190d0&gt;_100_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10d96c0d0&gt;_75_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10db9d0d0&gt;_50_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10dbbb0d0&gt;_75_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10dd050d0&gt;_50_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10de7a0d0&gt;_120_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10e5f10d0&gt;_65_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10e81a0d0&gt;_100_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x10f8ea0d0&gt;_75_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-1/data/file_&lt;function sigmoid at 0x1100a40d0&gt;_120_1_50_True_True.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/PA2_CSE251B_W2022.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/checker.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/config.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/data/cifar-10-batches-py/batches.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/data/cifar-10-batches-py/data_batch_1" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/data/cifar-10-batches-py/data_batch_2" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/data/cifar-10-batches-py/data_batch_3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/data/cifar-10-batches-py/data_batch_4" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/data/cifar-10-batches-py/data_batch_5" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/data/cifar-10-batches-py/readme.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/data/cifar-10-batches-py/test_batch" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/neuralnet.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assignment-2/sanity.pkl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assignment-1/cse251b_PA1.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment-1/cse251b_PA1.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assignment-1/src/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment-1/src/data.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assignment-1/src/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment-1/src/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assignment-1/src/network.py" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment-1/src/network.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assignment-1/src/pca.py" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment-1/src/pca.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assignment-1/src/temp.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assignment-1/src/traffic_reader.py" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment-1/src/traffic_reader.py" afterDir="false" />
+    <list default="true" id="70cd0614-4324-43fa-9038-4093cbb8ef1c" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assignment-2/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment-2/config.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assignment-2/neuralnet.py" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment-2/neuralnet.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -95,6 +13,14 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -107,6 +33,35 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RunManager">
+    <configuration name="network" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="CSE251B" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Assignment-1/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Assignment-1/src/network.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.network" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">

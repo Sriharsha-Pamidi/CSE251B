@@ -25,11 +25,20 @@ def load_config(path):
     return yaml.load(open(path + 'config.yaml', 'r'), Loader=yaml.SafeLoader)
 
 
+def find_metrics(inp):
+    """
+    to find mean and standard deviation
+    """
+    global zscore_metrics
+    zscore_metrics = [inp.mean(axis=0),inp.std(axis=0)]
+    return
+
 def normalize_data(inp):
     """
     TODO: Normalize your inputs here to have 0 mean and unit variance.
     """
-    return (inp - inp.mean()) / inp.std()
+    global zscore_metrics
+    return (inp - zscore_metrics[0]) / zscore_metrics[1]
 
 
 def one_hot_encoding(labels, num_classes=10):
@@ -60,6 +69,7 @@ def load_data(path, mode='train'):
             label = images_dict[b'labels']
             labels.extend(label)
             images.extend(data)
+        find_metrics(np.array(images))
         normalized_images = normalize_data(np.array(images))
         one_hot_labels = one_hot_encoding(labels, num_classes=10)
         return np.array(normalized_images), np.array(one_hot_labels)
@@ -103,7 +113,7 @@ class Activation():
         """
         TODO: Initialize activation type and placeholders here.
         """
-        if activation_type not in ["sigmoid", "tanh", "ReLU", "leakyReLU"]:
+        if activation_type not in ["sigmoid", "tanh", "ReLU", "leakyReLU","softmax"]:
             raise NotImplementedError(f"{activation_type} is not implemented.")
 
         # Type of non-linear activation.
@@ -111,6 +121,35 @@ class Activation():
 
         # Placeholder for input. This will be used for computing gradients.
         self.x = None
+        self.grad_func = None
+        if self.activation_type == "sigmoid":
+            self.grad_func = self.grad_sigmoid
+
+        elif self.activation_type == "tanh":
+            self.grad_func = self.grad_tanh
+
+        elif self.activation_type == "ReLU":
+            self.grad_func = self.grad_ReLU
+
+        elif self.activation_type == "leakyReLU":
+            self.grad_func = self.grad_leakyReLU
+        elif self.activation_type == "softmax":
+            self.grad_func = self.grad_softmax
+            
+        self.activation_func = None
+        if self.activation_type == "sigmoid":
+            self.activation_func = self.sigmoid
+
+        elif self.activation_type == "tanh":
+            self.activation_func = self.tanh
+
+        elif self.activation_type == "ReLU":
+            self.activation_func = self.ReLU
+
+        elif self.activation_type == "leakyReLU":
+            self.activation_func = self.leakyReLU
+        elif self.activation_type == "softmax":
+            self.activation_func = self.softmax
 
     def __call__(self, a):
         """
@@ -123,37 +162,14 @@ class Activation():
         Compute the forward pass.
         """
         self.x = a
-        if self.activation_type == "sigmoid":
-            return self.sigmoid(a)
+        return self.activation_func(a)
 
-        elif self.activation_type == "tanh":
-            return self.tanh(a)
-
-        elif self.activation_type == "ReLU":
-            return self.ReLU(a)
-
-        elif self.activation_type == "leakyReLU":
-            return self.leakyReLU(a)
-
-    def backward(self, delta):
+    def backward(self):
         """
         Compute the backward pass.
         """
-        grad = None
-
-        if self.activation_type == "sigmoid":
-            grad = self.grad_sigmoid()
-
-        elif self.activation_type == "tanh":
-            grad = self.grad_tanh()
-
-        elif self.activation_type == "ReLU":
-            grad = self.grad_ReLU()
-
-        elif self.activation_type == "leakyReLU":
-            grad = self.grad_leakyReLU()
-
-        return grad * delta
+        # print("Activation",self.x.shape)
+        return self.grad_func()
 
     def sigmoid(self, x):
         """
@@ -179,6 +195,20 @@ class Activation():
         """
         return np.maximum(0.1 * x, x)
 
+    def softmax(self,x):
+        """
+        TODO: Implement the softmax function here.
+        Remember to take care of the overflow condition.
+        """
+        exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+        return exp_x / np.sum(exp_x, axis=1, keepdims=True)
+    def grad_softmax(self):
+        """
+        TODO: Implement the softmax function here.
+        Remember to take care of the overflow condition.
+        """
+        return np.ones(self.x.shape)
+    
     def grad_sigmoid(self):
         """
         TODO: Compute the gradient for sigmoid here.
@@ -223,14 +253,16 @@ class Layer():
         Define the architecture and create placeholder.
         """
         np.random.seed(42)
+        self.in_size = in_units
+        self.out_size = out_units
         self.w = np.random.randn(in_units, out_units)    # Declare the Weight matrix
         self.b = np.random.randn(1, out_units)    # Create a placeholder for Bias
-        self.x = None    # Save the input to forward in this
-        self.a = None    # Save the output of forward pass in this (without activation)
+        self.x =  np.random.randn(1,in_units)    # Save the input to forward in this
+        self.a = np.random.randn(1,out_units)    # Save the output of forward pass in this (without activation)
 
-        self.d_x = None  # Save the gradient w.r.t x in this
-        self.d_w = None  # Save the gradient w.r.t w in this
-        self.d_b = None  # Save the gradient w.r.t b in this
+        self.d_x = np.zeros((1,in_units))  # Save the gradient w.r.t x in this
+        self.d_w = np.zeros((in_units, out_units))  # Save the gradient w.r.t w in this
+        self.d_b = np.zeros((1,out_units))  # Save the gradient w.r.t b in this
 
         self.delta_w_old = 0  # Save delta w
         self.delta_b_old = 0  # Save delta b
@@ -254,16 +286,16 @@ class Layer():
         self.a = np.dot(x, self.w) + self.b
         return self.a
         
-    def backward(self, delta):
+    def backward(self, delta,grad):
         """
         TODO: Write the code for backward pass. This takes in gradient from its next layer as input,
         computes gradient for its weights and the delta to pass to its previous layers.
         Return self.dx
         """
+        # print("Forward Layer",delta.shape)
         scale_size = self.x.shape[0] * 10
-
-        self.d_x = delta.dot(self.w.T)
-        self.d_w = -self.x.T.dot(delta) / scale_size
+        self.d_x = np.multiply(grad,np.dot(delta,self.w.T))
+        self.d_w = -np.dot(self.x.T,delta) / scale_size
         self.d_b = -delta.sum(axis=0) / scale_size
 
         return self.d_x
@@ -283,8 +315,8 @@ class Layer():
             self.delta_b_old = b_delta
 
         else:
-            self.w += lr * self.d_w
-            self.b += lr * self.d_b
+            self.w -= lr * self.d_w
+            self.b -= lr * self.d_b
 
     def store_parameters(self):
         self.w_min = self.w
@@ -322,6 +354,7 @@ class Neuralnetwork():
             self.layers.append(Layer(config['layer_specs'][i], config['layer_specs'][i+1]))
             if i < len(config['layer_specs']) - 2:
                 self.layers.append(Activation(config['activation']))
+        # self.layers.append(Activation('softmax'))
 
     def __call__(self, x, targets=None):
         """
@@ -338,48 +371,59 @@ class Neuralnetwork():
         self.targets = targets
 
         # Forward Path
-        Input = x
+        Input = x   ## global input variable which is recalculated for every layer
         for layer in self.layers:
             Input = layer.forward(Input)
 
         # Softmax Activation
         self.y = softmax(Input)
+        # self.y = Input
+        
 
-        if targets is None:
-            return self.y
-        else:
-            loss = self.loss(self.y, targets)
-            return self.y, loss
 
     def loss(self, logits, targets):
         '''
         TODO: compute the categorical cross-entropy loss and return it.
         '''
         scale_size = targets.shape[0]
-
-        loss = -np.sum(np.multiply(targets, np.log(logits))) / scale_size
+        loss_val = -np.sum(np.multiply(targets, np.log(logits))) / scale_size
 
         # l2 penalty
         if self.l2_penalty:
             for layer in self.layers:
                 if isinstance(layer, Layer):
-                    loss += (np.sum(layer.w ** 2)) * self.l2_penalty / 2
+                    loss_val += (np.sum(layer.w ** 2)) * self.l2_penalty / 2
 
-        return loss
+        return loss_val
 
     def backward(self):
         '''
         TODO: Implement backpropagation here.
         Call backward methods of individual layers.
         '''
+        # daru1
         delta = self.targets - self.y
-        for layer in self.layers[::-1]:
-            if isinstance(layer, Layer):
-                delta = layer.backward(delta)
-            else:
-                delta = layer.backward(delta)
+        grad = self.layers[3].backward()
+        delta = self.layers[4].backward(delta,grad)
+        grad = self.layers[1].backward()
+        delta = self.layers[2].backward(delta,grad)
+        
+        layer = self.layers[0]
+        scale_size = layer.x.shape[0] * 10
+        layer.d_w = -np.dot(layer.x.T,delta) / scale_size
+        layer.d_b = -delta.sum(axis=0) / scale_size
 
-    def updata_parameters(self):
+        # print("---------------------")
+        # for layer in self.layers[::-2]:
+        # for i in range(len())
+        #     i+=1
+        #     print(i,"   type layer -",isinstance(layer, Layer))
+        #     grad = layer.backward()
+        #     delta = layer.backward(delta,grad)
+        
+
+
+    def update_parameters(self):
         for layer in self.layers[::-1]:
             if isinstance(layer, Layer):
                 layer.update_parameters(self.lr, l2_penalty=self.l2_penalty, momentum=self.momentum)
@@ -394,12 +438,13 @@ class Neuralnetwork():
             if isinstance(layer, Layer):
                 layer.load_parameters()
 
-    def predict(self, x, targets):
-        y = self.forward(x)
-        predictions = np.argmax(y, axis=1)
-        targets = np.argmax(targets, axis=1)
+    def predict(self, x):
+        self.forward(x)
+        y = self.y
 
-        return np.mean(predictions == targets)
+        y[y== np.max(y,axis=1).reshape(y.shape[0],1)] = 1
+        y[y!=1] = 0
+        return y
 
 
 def generate_batch(x, y, bs=1, shuffle_En=True):
@@ -412,6 +457,9 @@ def generate_batch(x, y, bs=1, shuffle_En=True):
         yield x[index_final], y[index_final]
 
 
+def accuracy(y_pred,y):
+    return np.sum(np.multiply(y_pred,y))/y.shape[0]
+    
 def train(model, x_train, y_train, x_valid, y_valid, config):
     """
     TODO: Train your model here.
@@ -420,28 +468,26 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
     Use config to set parameters for training like learning rate, momentum, etc.
     """
 
-    epochs = config['epochs']
-    bs = config['batch_size']
-    early_stop_En = config['early_stop']
-    epoch_threshold = config['early_stop_epoch']
-
     valid_accuracy_max = -float('inf')
     valid_accuracy_decrease = 0
     train_metric = {'epochs': [], 'train_loss': [], 'train_accuracy': [], 'valid_loss': [], 'valid_accuracy': []}
 
     start_time = time.time()
-    for epoch in range(epochs):
+    for epoch in range(config['epochs']):
         train_loss_batch, train_accuracy_batch = [], []
-        for x, y in generate_batch(x_train, y_train, bs=bs, shuffle_En=True):
-            train_loss_batch.append(model.forward(x, targets=y)[1])
+        for x, y in generate_batch(x_train, y_train, bs= config['batch_size'], shuffle_En=True):
+            model.forward(x, targets=y)
+            train_loss = model.loss(model.y,model.targets)
+            train_loss_batch.append(train_loss)
             model.backward()
-            model.updata_parameters()
-            train_accuracy_batch.append(model.predict(x, targets=y))
+            model.update_parameters()
+            train_accuracy_batch.append(accuracy(model.predict(x),y))
 
         train_loss = np.mean(np.array(train_loss_batch))
         train_accuracy = np.mean(np.array(train_accuracy_batch))
-        valid_loss = model.forward(x_valid, targets=y_valid)[1]
-        valid_accuracy = model.predict(x_valid, targets=y_valid)
+        model.forward(x_valid, targets=y_valid)
+        valid_loss = model.loss(model.y, targets=y_valid)
+        valid_accuracy = accuracy(model.predict(x_valid), y_valid)
 
         if epoch % 10 == 0:
             print('Epoch {}, Time {} seconds'.format(epoch + 1, time.time() - start_time))
@@ -461,8 +507,8 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
         else:
             valid_accuracy_decrease += 1
 
-        if early_stop_En:
-            if valid_accuracy_decrease > epoch_threshold:
+        if config['early_stop']:
+            if valid_accuracy_decrease > config['early_stop_epoch']:
                 break
 
     return train_metric
@@ -472,8 +518,8 @@ def test(model, x_test, y_test):
     """
     TODO: Calculate and return the accuracy on the test set.
     """
-
-    return model.predict(x_test, y_test)
+    y_pred = model.predict(x_test)
+    return accuracy(y_pred,y_pred)
 
 
 def data_split(x, y, ratio=0.1):
@@ -503,9 +549,6 @@ if __name__ == "__main__":
     # Load the data
     x_train, y_train = load_data(path="./data", mode="train")
     x_test,  y_test = load_data(path="./data", mode="test")
-    
-    x_train = normalize_data(x_train)
-    x_test = normalize_data(x_test)
 
     # TODO: Create splits for validation data here.
     # x_val, y_val = ...
