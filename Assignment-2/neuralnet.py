@@ -25,11 +25,20 @@ def load_config(path):
     return yaml.load(open(path + 'config.yaml', 'r'), Loader=yaml.SafeLoader)
 
 
+def find_metrics(inp):
+    """
+    to find mean and standard deviation
+    """
+    global zscore_metrics
+    zscore_metrics = [inp.mean(axis=0, keepdims=True),inp.std(axis=0, keepdims=True)]
+    pass
+
+
 def normalize_data(inp):
     """
     TODO: Normalize your inputs here to have 0 mean and unit variance.
     """
-    return (inp - inp.mean()) / inp.std()
+    return (inp - zscore_metrics[0]) / zscore_metrics[1]
 
 
 def one_hot_encoding(labels, num_classes=10):
@@ -59,6 +68,7 @@ def load_data(path, mode='train'):
             label = images_dict[b'labels']
             labels.extend(label)
             images.extend(data)
+        find_metrics(np.array(images))
         normalized_images = normalize_data(np.array(images))
         one_hot_labels = one_hot_encoding(labels, num_classes=10)
         return np.array(normalized_images), np.array(one_hot_labels)
@@ -158,6 +168,8 @@ class Activation():
         """
         TODO: Implement the sigmoid activation here.
         """
+        epsilon = 10
+        x = x.clip(-epsilon, epsilon)
         return 1 / (1 + np.exp(-x))
 
     def tanh(self, x):
@@ -230,12 +242,12 @@ class Layer():
         self.d_x = None  # Save the gradient w.r.t x in this
         self.d_w = None  # Save the gradient w.r.t w in this
         self.d_b = None  # Save the gradient w.r.t b in this
+        
+        self.w_min = self.w  # Store the weight matrix
+        self.b_min = self.b  # Store the bias
 
         self.delta_w_old = 0  # Save delta w
         self.delta_b_old = 0  # Save delta b
-
-        self.w_min = self.w  # Store the weight matrix
-        self.b_min = self.b  # Store the bias
 
     def __call__(self, x):
         """
@@ -259,39 +271,33 @@ class Layer():
         computes gradient for its weights and the delta to pass to its previous layers.
         Return self.dx
         """
-        scale_size = self.x.shape[0] * 10
-
         self.d_x = delta.dot(self.w.T)
-        self.d_w = -self.x.T.dot(delta) / scale_size
-        self.d_b = -delta.sum(axis=0) / scale_size
-
+        self.d_w = -self.x.T.dot(delta) / (self.x.shape[0] * 10)
+        self.d_b = -delta.sum(axis=0) / (self.x.shape[0] * 10)
+        
         return self.d_x
 
-    def update_parameters(self, lr, l2_penalty=0, momentum=None):
+    def update_parameters(self, lr, l2_penalty = 0, momentum = None):
 
         self.d_w = self.d_w + l2_penalty * self.w
-
         if momentum:
             w_delta = self.d_w + momentum * self.delta_w_old
             b_delta = self.d_b + momentum * self.delta_b_old
 
+            self.delta_w_old, self.delta_b_old = w_delta, b_delta
+            
             self.w -= lr * w_delta
             self.b -= lr * b_delta
-
-            self.delta_w_old = w_delta
-            self.delta_b_old = b_delta
-
+            
         else:
-            self.w += lr * self.d_w
-            self.b += lr * self.d_b
+            self.w -= lr * self.d_w
+            self.b -= lr * self.d_b
 
     def store_parameters(self):
-        self.w_min = self.w
-        self.b_min = self.b
+        self.w_min, self.b_min = self.w, self.b
 
     def load_parameters(self):
-        self.w = self.w_min
-        self.b = self.b_min
+        self.w, self.b = self.w_min, self.b_min
 
 
 class Neuralnetwork():
@@ -337,7 +343,7 @@ class Neuralnetwork():
         self.targets = targets
 
         # Forward Path
-        Input = x
+        Input = x   # global input variable which is recalculated for every layer
         for layer in self.layers:
             Input = layer.forward(Input)
 
@@ -354,17 +360,13 @@ class Neuralnetwork():
         '''
         TODO: compute the categorical cross-entropy loss and return it.
         '''
-        scale_size = targets.shape[0]
-
-        loss = -np.sum(np.multiply(targets, np.log(logits))) / scale_size
-
+        loss_val = -np.sum(np.multiply(targets, np.log(logits))) / targets.shape[0]
         # l2 penalty
         if self.l2_penalty:
             for layer in self.layers:
-                if isinstance(layer, Layer):
-                    loss += (np.sum(layer.w ** 2)) * self.l2_penalty / 2
-
-        return loss
+                if type(layer) == Layer:
+                    loss_val += (np.sum(layer.w ** 2)) * self.l2_penalty / 2
+        return loss_val
 
     def backward(self):
         '''
@@ -373,24 +375,24 @@ class Neuralnetwork():
         '''
         delta = self.targets - self.y
         for layer in self.layers[::-1]:
-            if isinstance(layer, Layer):
+            if type(layer) == Layer:
                 delta = layer.backward(delta)
             else:
                 delta = layer.backward(delta)
 
     def updata_parameters(self):
         for layer in self.layers[::-1]:
-            if isinstance(layer, Layer):
+            if type(layer) == Layer:
                 layer.update_parameters(self.lr, l2_penalty=self.l2_penalty, momentum=self.momentum)
 
     def store_parameters(self):
         for layer in self.layers:
-            if isinstance(layer, Layer):
+            if type(layer) == Layer:
                 layer.store_parameters()
 
     def load_parameters(self):
         for layer in self.layers:
-            if isinstance(layer, Layer):
+            if type(layer) == Layer:
                 layer.load_parameters()
 
     def predict(self, x, targets):
@@ -401,11 +403,13 @@ class Neuralnetwork():
         return np.mean(predictions == targets)
 
 
-def generate_batch(x, y, bs=1, shuffle_En=True):
-    if shuffle_En:
+def generate_batch(x, y, bs=1, shuffle=True):
+    # Function taken from PA1
+    if shuffle:
         index = np.random.permutation(len(x))
     else:
         index = list(range(len(x)))
+
     for idx in range(0, len(x) - bs + 1, bs):
         index_final = index[idx:idx + bs]
         yield x[index_final], y[index_final]
@@ -419,19 +423,14 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
     Use config to set parameters for training like learning rate, momentum, etc.
     """
 
-    epochs = config['epochs']
-    bs = config['batch_size']
-    early_stop_En = config['early_stop']
-    epoch_threshold = config['early_stop_epoch']
-
     valid_accuracy_max = -float('inf')
-    valid_accuracy_decrease = 0
+    early_stop_count = 0
     train_metric = {'epochs': [], 'train_loss': [], 'train_accuracy': [], 'valid_loss': [], 'valid_accuracy': []}
 
     start_time = time.time()
-    for epoch in range(epochs):
+    for epoch in range(config['epochs']):
         train_loss_batch, train_accuracy_batch = [], []
-        for x, y in generate_batch(x_train, y_train, bs=bs, shuffle_En=True):
+        for x, y in generate_batch(x_train, y_train, bs=config['batch_size'], shuffle=True):
             train_loss_batch.append(model.forward(x, targets=y)[1])
             model.backward()
             model.updata_parameters()
@@ -443,9 +442,9 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
         valid_accuracy = model.predict(x_valid, targets=y_valid)
 
         if epoch % 10 == 0:
-            print('Epoch {}, Time {} seconds'.format(epoch + 1, time.time() - start_time))
-            print('Train_loss = {:.4f}, Valid_loss = {:.4f}, Valid_accuracy = {:.4f}'.format(train_loss, valid_loss,
-                                                                                             valid_accuracy))
+            print(f'Epoch {epoch + 1}, Time {time.time() - start_time} seconds')
+            print('Train_loss = {:.4f}, Validation_loss = {:.4f}, Validation_accuracy = {:.4f}'.
+                  format(train_loss, valid_loss, valid_accuracy))
 
         train_metric['epochs'].append(epoch + 1)
         train_metric['train_loss'].append(train_loss)
@@ -456,12 +455,12 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
         if valid_accuracy > valid_accuracy_max:
             model.store_parameters()
             valid_accuracy_max = valid_accuracy
-            valid_accuracy_decrease = 0
+            early_stop_count = 0
         else:
-            valid_accuracy_decrease += 1
-
-        if early_stop_En:
-            if valid_accuracy_decrease > epoch_threshold:
+            early_stop_count += 1
+    
+        if config['early_stop']:
+            if early_stop_count > config['early_stop_epoch']:
                 break
 
     return train_metric
@@ -471,25 +470,16 @@ def test(model, x_test, y_test):
     """
     TODO: Calculate and return the accuracy on the test set.
     """
-
     return model.predict(x_test, y_test)
 
 
 def data_split(x, y, ratio=0.1):
-    val_num = int(np.floor(x.shape[0] * ratio))
+    # Function Implementation Taken from PA1
+    index_list = list(range(x.shape[0]))
+    valid_list = random.sample(index_list, int(np.floor(x.shape[0] * ratio)))
+    train_list = [idx for idx in index_list if (idx not in valid_list)]
 
-    alllist = list(range(x.shape[0]))
-    
-    val_list = random.sample(alllist, val_num)
-    
-    train_list = [idx for idx in alllist if (idx not in val_list)]
-    
-    x_train = x[train_list]
-    y_train = y[train_list]
-    x_val = x[val_list]
-    y_val = y[val_list]
-
-    return x_train, y_train, x_val, y_val
+    return x[train_list], y[train_list], x[valid_list], y[valid_list]
 
 
 if __name__ == "__main__":
@@ -501,11 +491,8 @@ if __name__ == "__main__":
 
     # Load the data
     x_train, y_train = load_data(path="./data", mode="train")
-    x_test,  y_test = load_data(path="./data", mode="test")
+    x_test,  y_test  = load_data(path="./data", mode="test")
     
-    x_train = normalize_data(x_train)
-    x_test = normalize_data(x_test)
-
     # TODO: Create splits for validation data here.
     # x_val, y_val = ...
     x_train, y_train, x_valid, y_valid = data_split(x_train, y_train, 0.2)
