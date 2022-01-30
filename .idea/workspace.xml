@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="70cd0614-4324-43fa-9038-4093cbb8ef1c" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assignment-2/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment-2/config.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assignment-2/neuralnet.py" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment-2/neuralnet.py" afterDir="false" />

@@ -168,6 +168,7 @@ class Activation():
         TODO: Implement the sigmoid activation here.
         """
         epsilon  = 10
+        x.clip(-epsilon,epsilon)
         return 1 / (1 + np.exp(-x))
 
     def tanh(self, x):
@@ -187,21 +188,7 @@ class Activation():
         TODO: Implement leaky ReLU here.
         """
         return np.maximum(0.1 * x, x)
-
-    def softmax(self,x):
-        """
-        TODO: Implement the softmax function here.
-        Remember to take care of the overflow condition.
-        """
-        exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
-        return exp_x / np.sum(exp_x, axis=1, keepdims=True)
-    def grad_softmax(self):
-        """
-        TODO: Implement the softmax function here.
-        Remember to take care of the overflow condition.
-        """
-        return np.ones(self.x.shape)
-    
+   
     def grad_sigmoid(self):
         """
         TODO: Compute the gradient for sigmoid here.
@@ -212,7 +199,7 @@ class Activation():
         """
         TODO: Compute the gradient for tanh here.
         """
-        return 1 - np.power(self.tanh(self.x), 2)
+        return 1 - self.tanh(self.x)**2
 
     def grad_ReLU(self):
         """
@@ -283,14 +270,12 @@ class Layer():
         computes gradient for its weights and the delta to pass to its previous layers.
         Return self.dx
         """
-        scale_size = self.x.shape[0] * 10
+        scale_size = self.x.shape[0]*10
         self.d_w = -self.x.T.dot(delta) / scale_size
         self.d_b = -delta.sum(axis=0) / scale_size
         
         self.d_x = delta.dot(self.w.T)
         
-        
-
         return self.d_x
 
     def update_parameters(self, lr, l2_penalty=0, momentum=None):
@@ -381,11 +366,13 @@ class Neuralnetwork():
         loss_val = -np.sum(np.multiply(targets, np.log(logits))) / scale_size
 
         # l2 penalty
+        # print("enter ",loss_val)
+        a = loss_val
         if self.l2_penalty:
             for layer in self.layers:
                 if isinstance(layer, Layer):
-                    loss_val += (np.sum(layer.w ** 2)) * self.l2_penalty / 2
-
+                    loss_val += (np.sum(layer.w ** 2)) * self.l2_penalty / scale_size
+        # print("exit  ",loss_val-a)
         return loss_val
 
     def backward(self):
@@ -393,14 +380,8 @@ class Neuralnetwork():
         TODO: Implement backpropagation here.
         Call backward methods of individual layers.
         '''
-        # daru1
-        i=0
-        
+        delta = self.targets - self.y
         for layer in self.layers[::-1]:
-            if i == 0 :
-                # delta = (1 - np.power(np.tanh(self.layers[4].a), 2))*  (self.targets - self.y)
-                delta = self.targets-self.y
-                i=1
             if isinstance(layer, Layer):
                 delta = layer.backward(delta)
             else:
@@ -422,9 +403,7 @@ class Neuralnetwork():
                 layer.load_parameters()
 
     def predict(self, x):
-        self.forward(x)
-        y = self.y
-
+        y = self.forward(x)
         y[y== np.max(y,axis=1).reshape(y.shape[0],1)] = 1
         y[y!=1] = 0
         return y
@@ -489,7 +468,7 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
             valid_accuracy_decrease = 0
         else:
             valid_accuracy_decrease += 1
-
+    
         if config['early_stop']:
             if valid_accuracy_decrease > config['early_stop_epoch']:
                 break
@@ -502,7 +481,7 @@ def test(model, x_test, y_test):
     TODO: Calculate and return the accuracy on the test set.
     """
     y_pred = model.predict(x_test)
-    return accuracy(y_pred,y_pred)
+    return accuracy(y_pred,y_test)
 
 
 def data_split(x, y, ratio=0.1):
