@@ -113,7 +113,7 @@ class Activation():
         """
         TODO: Initialize activation type and placeholders here.
         """
-        if activation_type not in ["sigmoid", "tanh", "ReLU", "leakyReLU","softmax"]:
+        if activation_type not in ["sigmoid", "tanh", "ReLU", "leakyReLU"]:
             raise NotImplementedError(f"{activation_type} is not implemented.")
 
         # Type of non-linear activation.
@@ -121,35 +121,6 @@ class Activation():
 
         # Placeholder for input. This will be used for computing gradients.
         self.x = None
-        self.grad_func = None
-        if self.activation_type == "sigmoid":
-            self.grad_func = self.grad_sigmoid
-
-        elif self.activation_type == "tanh":
-            self.grad_func = self.grad_tanh
-
-        elif self.activation_type == "ReLU":
-            self.grad_func = self.grad_ReLU
-
-        elif self.activation_type == "leakyReLU":
-            self.grad_func = self.grad_leakyReLU
-        elif self.activation_type == "softmax":
-            self.grad_func = self.grad_softmax
-            
-        self.activation_func = None
-        if self.activation_type == "sigmoid":
-            self.activation_func = self.sigmoid
-
-        elif self.activation_type == "tanh":
-            self.activation_func = self.tanh
-
-        elif self.activation_type == "ReLU":
-            self.activation_func = self.ReLU
-
-        elif self.activation_type == "leakyReLU":
-            self.activation_func = self.leakyReLU
-        elif self.activation_type == "softmax":
-            self.activation_func = self.softmax
 
     def __call__(self, a):
         """
@@ -162,19 +133,41 @@ class Activation():
         Compute the forward pass.
         """
         self.x = a
-        return self.activation_func(a)
+        if self.activation_type == "sigmoid":
+            return self.sigmoid(a)
 
-    def backward(self):
+        elif self.activation_type == "tanh":
+            return self.tanh(a)
+
+        elif self.activation_type == "ReLU":
+            return self.ReLU(a)
+
+        elif self.activation_type == "leakyReLU":
+            return self.leakyReLU(a)
+
+    def backward(self, delta):
         """
         Compute the backward pass.
         """
-        # print("Activation",self.x.shape)
-        return self.grad_func()
+        if self.activation_type == "sigmoid":
+            grad = self.grad_sigmoid()
+
+        elif self.activation_type == "tanh":
+            grad = self.grad_tanh()
+
+        elif self.activation_type == "ReLU":
+            grad = self.grad_ReLU()
+
+        elif self.activation_type == "leakyReLU":
+            grad = self.grad_leakyReLU()
+
+        return np.multiply(grad, delta)
 
     def sigmoid(self, x):
         """
         TODO: Implement the sigmoid activation here.
         """
+        epsilon  = 10
         return 1 / (1 + np.exp(-x))
 
     def tanh(self, x):
@@ -253,13 +246,11 @@ class Layer():
         Define the architecture and create placeholder.
         """
         np.random.seed(42)
-        self.in_size = in_units
-        self.out_size = out_units
         self.w = np.random.randn(in_units, out_units)    # Declare the Weight matrix
         self.b = np.random.randn(1, out_units)    # Create a placeholder for Bias
         self.x =  np.random.randn(1,in_units)    # Save the input to forward in this
         self.a = np.random.randn(1,out_units)    # Save the output of forward pass in this (without activation)
-
+        
         self.d_x = np.zeros((1,in_units))  # Save the gradient w.r.t x in this
         self.d_w = np.zeros((in_units, out_units))  # Save the gradient w.r.t w in this
         self.d_b = np.zeros((1,out_units))  # Save the gradient w.r.t b in this
@@ -286,17 +277,19 @@ class Layer():
         self.a = np.dot(x, self.w) + self.b
         return self.a
         
-    def backward(self, delta,grad):
+    def backward(self, delta):
         """
         TODO: Write the code for backward pass. This takes in gradient from its next layer as input,
         computes gradient for its weights and the delta to pass to its previous layers.
         Return self.dx
         """
-        # print("Forward Layer",delta.shape)
         scale_size = self.x.shape[0] * 10
-        self.d_x = np.multiply(grad,np.dot(delta,self.w.T))
-        self.d_w = -np.dot(self.x.T,delta) / scale_size
+        self.d_w = -self.x.T.dot(delta) / scale_size
         self.d_b = -delta.sum(axis=0) / scale_size
+        
+        self.d_x = delta.dot(self.w.T)
+        
+        
 
         return self.d_x
 
@@ -354,7 +347,6 @@ class Neuralnetwork():
             self.layers.append(Layer(config['layer_specs'][i], config['layer_specs'][i+1]))
             if i < len(config['layer_specs']) - 2:
                 self.layers.append(Activation(config['activation']))
-        # self.layers.append(Activation('softmax'))
 
     def __call__(self, x, targets=None):
         """
@@ -377,8 +369,7 @@ class Neuralnetwork():
 
         # Softmax Activation
         self.y = softmax(Input)
-        # self.y = Input
-        
+        return self.y
 
 
     def loss(self, logits, targets):
@@ -386,6 +377,7 @@ class Neuralnetwork():
         TODO: compute the categorical cross-entropy loss and return it.
         '''
         scale_size = targets.shape[0]
+
         loss_val = -np.sum(np.multiply(targets, np.log(logits))) / scale_size
 
         # l2 penalty
@@ -402,26 +394,17 @@ class Neuralnetwork():
         Call backward methods of individual layers.
         '''
         # daru1
-        delta = self.targets - self.y
-        grad = self.layers[3].backward()
-        delta = self.layers[4].backward(delta,grad)
-        grad = self.layers[1].backward()
-        delta = self.layers[2].backward(delta,grad)
+        i=0
         
-        layer = self.layers[0]
-        scale_size = layer.x.shape[0] * 10
-        layer.d_w = -np.dot(layer.x.T,delta) / scale_size
-        layer.d_b = -delta.sum(axis=0) / scale_size
-
-        # print("---------------------")
-        # for layer in self.layers[::-2]:
-        # for i in range(len())
-        #     i+=1
-        #     print(i,"   type layer -",isinstance(layer, Layer))
-        #     grad = layer.backward()
-        #     delta = layer.backward(delta,grad)
-        
-
+        for layer in self.layers[::-1]:
+            if i == 0 :
+                # delta = (1 - np.power(np.tanh(self.layers[4].a), 2))*  (self.targets - self.y)
+                delta = self.targets-self.y
+                i=1
+            if isinstance(layer, Layer):
+                delta = layer.backward(delta)
+            else:
+                delta = layer.backward(delta)
 
     def update_parameters(self):
         for layer in self.layers[::-1]:
@@ -548,8 +531,8 @@ if __name__ == "__main__":
 
     # Load the data
     x_train, y_train = load_data(path="./data", mode="train")
-    x_test,  y_test = load_data(path="./data", mode="test")
-
+    x_test,  y_test  = load_data(path="./data", mode="test")
+    
     # TODO: Create splits for validation data here.
     # x_val, y_val = ...
     x_train, y_train, x_valid, y_valid = data_split(x_train, y_train, 0.2)
