@@ -360,6 +360,7 @@ class Neuralnetwork():
         '''
         TODO: compute the categorical cross-entropy loss and return it.
         '''
+        logits = np.where(logits > 0.0000000001, logits, np.exp(-10))
         loss_val = -np.sum(np.multiply(targets, np.log(logits))) / targets.shape[0]
         # l2 penalty
         if self.l2_penalty:
