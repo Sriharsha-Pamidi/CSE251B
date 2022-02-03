@@ -95,7 +95,9 @@ def softmax(x):
     Remember to take care of the overflow condition.
     """
     exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
-    return exp_x / np.sum(exp_x, axis=1, keepdims=True)
+    exp_x = exp_x / np.sum(exp_x, axis=1, keepdims=True)
+    exp_x[exp_x<1e-20] = 1e-20
+    return exp_x
 
 
 class Activation():
@@ -181,7 +183,7 @@ class Activation():
         """
         TODO: Implement ReLU here.
         """
-        return np.maximum(0, x)
+        return np.maximum(pow(10,-25), x)
 
     def leakyReLU(self, x):
         """
@@ -205,7 +207,7 @@ class Activation():
         """
         TODO: Compute the gradient for ReLU here.
         """
-        gradient = np.zeros_like(self.x)
+        gradient = np.full_like(self.x, pow(10,-10))
         gradient[self.x > 0] = 1
         return gradient
 
@@ -362,17 +364,15 @@ class Neuralnetwork():
         TODO: compute the categorical cross-entropy loss and return it.
         '''
         scale_size = targets.shape[0]
-
+        # print(targets.shape)
         loss_val = -np.sum(np.multiply(targets, np.log(logits))) / scale_size
 
         # l2 penalty
-        # print("enter ",loss_val)
         a = loss_val
         if self.l2_penalty:
             for layer in self.layers:
                 if isinstance(layer, Layer):
                     loss_val += (np.sum(layer.w ** 2)) * self.l2_penalty / scale_size
-        # print("exit  ",loss_val-a)
         return loss_val
 
     def backward(self):
@@ -533,6 +533,7 @@ if __name__ == "__main__":
     plt.plot(train_metrics['epochs'], train_metrics['valid_loss'], label='validation')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
+    plt.title('Loss vs no. of epochs')
     plt.legend()
     plt.show()
 
@@ -541,6 +542,7 @@ if __name__ == "__main__":
     plt.plot(train_metrics['epochs'], train_metrics['valid_accuracy'], label='validation')
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
+    plt.title('Accuracy vs no. of epochs')
     plt.legend()
     plt.show()
     
