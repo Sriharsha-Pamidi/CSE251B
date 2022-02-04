@@ -523,6 +523,10 @@ if __name__ == "__main__":
     # Load parameters with least validation loss
     model.load_parameters()
     
+    train_acc = test(model, x_train, y_train)
+    print(f'Train_accuracy: {train_acc}')
+    valid_acc = test(model, x_valid, y_valid)
+    print(f'Valid_accuracy: {valid_acc}')
     test_acc = test(model, x_test, y_test)
     print(f'Test_accuracy: {test_acc}')
 
