@@ -364,8 +364,7 @@ class Neuralnetwork():
         '''
         TODO: compute the categorical cross-entropy loss and return it.
         '''
-        scale_size = targets.shape[0]
-        # print(targets.shape)
+        scale_size = targets.shape[0]*10
         loss_val = -np.sum(np.multiply(targets, np.log(logits))) / scale_size
 
         # l2 penalty
@@ -447,15 +446,19 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
             train_accuracy_batch.append(accuracy(model.predict(x),y))
 
         train_loss = np.mean(np.array(train_loss_batch))
+        model.forward(x_train, targets=y_train)
+        train_loss = model.loss(model.y, model.targets)
+        train_loss_batch.append(train_loss)
         train_accuracy = np.mean(np.array(train_accuracy_batch))
+        train_accuracy = accuracy(model.predict(x_train),y_train)
         model.forward(x_valid, targets=y_valid)
         valid_loss = model.loss(model.y, targets=y_valid)
         valid_accuracy = accuracy(model.predict(x_valid), y_valid)
 
         if epoch % 10 == 0:
             print('Epoch {}, Time {} seconds'.format(epoch + 1, time.time() - start_time))
-            print('Train_loss = {:.4f}, Valid_loss = {:.4f}, Valid_accuracy = {:.4f}'.format(train_loss, valid_loss,
-                                                                                             valid_accuracy))
+            print('Train_loss = {:.4f}, Valid_loss = {:.4f}, Valid_accuracy = {:.4f}, Train_accuracy = {:.4f}'.format(train_loss, valid_loss,
+                                                                                             valid_accuracy,train_accuracy))
 
         train_metric['epochs'].append(epoch + 1)
         train_metric['train_loss'].append(train_loss)
@@ -502,6 +505,30 @@ def data_split(x, y, ratio=0.1):
     return x_train, y_train, x_val, y_val
 
 
+def checkNumApprox(x,y):
+    model = Neuralnetwork(config)
+    model.forward(x, targets=y)
+    # index = [40,5]
+    index = [5,2]
+    train_loss_0 = model.loss(model.y, model.targets)
+    i = 4
+    
+    temp = model.layers[i].w[index[0]][index[1]]
+    model.backward()
+    gradient_back = model.layers[i].d_w[index[0]][index[1]]
+    # gradient_back = model.layers[i].d_b[index[1]]
+    ep = 0.001
+    epsilon_val = temp*ep
+    model.layers[i].w[index[0]][index[1]] = temp-epsilon_val
+    model.forward(x, targets=y)
+    train_loss_1 = model.loss(model.y, model.targets)
+    model.layers[i].w[index[0]][index[1]] = temp+epsilon_val
+    model.forward(x, targets=y)
+    train_loss_2 = model.loss(model.y, model.targets)
+    gradient_approx = (train_loss_2 - train_loss_1)/(2*epsilon_val)
+    print(gradient_approx-gradient_back)
+    print(epsilon_val)
+    print((gradient_approx-gradient_back)/(epsilon_val**2))
 if __name__ == "__main__":
     # Load the configuration.
     config = load_config("")
@@ -513,6 +540,9 @@ if __name__ == "__main__":
     x_train, y_train = load_data(path="./data", mode="train")
     x_test,  y_test  = load_data(path="./data", mode="test")
     
+    # part b
+    # checkNumApprox(x_train[:10,:],y_train[:10])
+    
     # TODO: Create splits for validation data here.
     # x_val, y_val = ...
     x_train, y_train, x_valid, y_valid = data_split(x_train, y_train, 0.2)
@@ -522,7 +552,6 @@ if __name__ == "__main__":
 
     # Load parameters with least validation loss
     model.load_parameters()
-    
     train_acc = test(model, x_train, y_train)
     print(f'Train_accuracy: {train_acc}')
     valid_acc = test(model, x_valid, y_valid)
@@ -550,4 +579,3 @@ if __name__ == "__main__":
     plt.title('Accuracy vs no. of epochs')
     plt.legend()
     plt.show()
-    
