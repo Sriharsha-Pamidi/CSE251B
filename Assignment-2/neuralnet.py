@@ -25,11 +25,21 @@ def load_config(path):
     return yaml.load(open(path + 'config.yaml', 'r'), Loader=yaml.SafeLoader)
 
 
+def find_metrics(inp):
+    """
+    to find mean and standard deviation
+    """
+    global zscore_metrics
+    zscore_metrics = [inp.mean(axis=0),inp.std(axis=0)]
+    return
+
+
 def normalize_data(inp):
     """
     TODO: Normalize your inputs here to have 0 mean and unit variance.
     """
-    return (inp - inp.mean()) / inp.std()
+    global zscore_metrics
+    return (inp - zscore_metrics[0]) / zscore_metrics[1]
 
 
 def one_hot_encoding(labels, num_classes=10):
@@ -59,6 +69,7 @@ def load_data(path, mode='train'):
             label = images_dict[b'labels']
             labels.extend(label)
             images.extend(data)
+        find_metrics(np.array(images))
         normalized_images = normalize_data(np.array(images))
         one_hot_labels = one_hot_encoding(labels, num_classes=10)
         return np.array(normalized_images), np.array(one_hot_labels)
@@ -84,7 +95,9 @@ def softmax(x):
     Remember to take care of the overflow condition.
     """
     exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
-    return exp_x / np.sum(exp_x, axis=1, keepdims=True)
+    exp_x = exp_x / np.sum(exp_x, axis=1, keepdims=True)
+    exp_x[exp_x<1e-20] = 1e-20
+    return exp_x
 
 
 class Activation():
@@ -174,6 +187,7 @@ class Activation():
         """
         return x * (x > 0)
 
+
     def leakyReLU(self, x):
         """
         TODO: Implement leaky ReLU here.
@@ -192,11 +206,12 @@ class Activation():
         """
         return 1 - self.tanh(self.x) ** 2
 
+
     def grad_ReLU(self):
         """
         TODO: Compute the gradient for ReLU here.
         """
-        gradient = np.zeros_like(self.x)
+        gradient = np.full_like(self.x, pow(10,-10))
         gradient[self.x > 0] = 1
         return gradient
 
@@ -351,12 +366,12 @@ class Neuralnetwork():
         '''
         TODO: compute the categorical cross-entropy loss and return it.
         '''
-        loss_val = -np.sum(np.multiply(targets, np.log(logits))) / targets.shape[0]
+        loss_val = -np.sum(np.multiply(targets, np.log(logits))) / (targets.shape[0]*10)
         # l2 penalty
         if self.l2_penalty:
             for layer in self.layers:
                 if type(layer) == Layer:
-                    loss_val += (np.sum(layer.w ** 2)) * self.l2_penalty / 2
+                    loss_val += (np.sum(layer.w ** 2)) * self.l2_penalty / (targets.shape[0]*10)
         return loss_val
 
     def backward(self):
@@ -371,7 +386,7 @@ class Neuralnetwork():
             else:
                 delta = layer.backward(delta)
 
-    def updata_parameters(self):
+    def update_parameters(self):
         for layer in self.layers[::-1]:
             if type(layer) == Layer:
                 layer.update_parameters(self.lr, l2_penalty=self.l2_penalty, momentum=self.momentum)
@@ -386,12 +401,11 @@ class Neuralnetwork():
             if type(layer) == Layer:
                 layer.load_parameters()
 
-    def predict(self, x, targets):
+    def predict(self, x):
         y = self.forward(x)
-        predictions = np.argmax(y, axis=1)
-        targets = np.argmax(targets, axis=1)
-
-        return np.mean(predictions == targets)
+        y[y== np.max(y,axis=1).reshape(y.shape[0],1)] = 1
+        y[y!=1] = 0
+        return y
 
 
 def generate_batch(x, y, bs=1, shuffle=True):
@@ -405,6 +419,9 @@ def generate_batch(x, y, bs=1, shuffle=True):
         yield x[index_final], y[index_final]
 
 
+def accuracy(y_pred,y):
+    return np.sum(np.multiply(y_pred,y))/y.shape[0]
+    
 def train(model, x_train, y_train, x_valid, y_valid, config):
     """
     TODO: Train your model here.
@@ -421,20 +438,27 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
     for epoch in range(config['epochs']):
         train_loss_batch, train_accuracy_batch = [], []
         for x, y in generate_batch(x_train, y_train, bs=config['batch_size'], shuffle=True):
-            train_loss_batch.append(model.forward(x, targets=y)[1])
+            model.forward(x, targets=y)
+            train_loss = model.loss(model.y,model.targets)
+            train_loss_batch.append(train_loss)
             model.backward()
-            model.updata_parameters()
-            train_accuracy_batch.append(model.predict(x, targets=y))
+            model.update_parameters()
+            train_accuracy_batch.append(accuracy(model.predict(x),y))
 
         train_loss = np.mean(np.array(train_loss_batch))
+        model.forward(x_train, targets=y_train)
+        train_loss = model.loss(model.y, model.targets)
+        train_loss_batch.append(train_loss)
         train_accuracy = np.mean(np.array(train_accuracy_batch))
-        valid_loss = model.forward(x_valid, targets=y_valid)[1]
-        valid_accuracy = model.predict(x_valid, targets=y_valid)
+        train_accuracy = accuracy(model.predict(x_train),y_train)
+        model.forward(x_valid, targets=y_valid)
+        valid_loss = model.loss(model.y, targets=y_valid)
+        valid_accuracy = accuracy(model.predict(x_valid), y_valid)
 
         if epoch % 10 == 0:
-            print(f'Epoch {epoch + 1}, Time {time.time() - start_time} seconds')
-            print('Train_loss = {:.4f}, Validation_loss = {:.4f}, Validation_accuracy = {:.4f}'.
-                  format(train_loss, valid_loss, valid_accuracy))
+            print('Epoch {}, Time {} seconds'.format(epoch + 1, time.time() - start_time))
+            print('Train_loss = {:.4f}, Valid_loss = {:.4f}, Valid_accuracy = {:.4f}, Train_accuracy = {:.4f}'.format(train_loss, valid_loss,
+                                                                                             valid_accuracy,train_accuracy))
 
         train_metric['epochs'].append(epoch + 1)
         train_metric['train_loss'].append(train_loss)
@@ -461,7 +485,7 @@ def test(model, x_test, y_test):
     TODO: Calculate and return the accuracy on the test set.
     """
 
-    return model.predict(x_test, y_test)
+    return accuracy(model.predict(x_test), y_test)
 
 
 def data_split(x, y, ratio=0.1):
@@ -471,6 +495,33 @@ def data_split(x, y, ratio=0.1):
     train_list = [idx for idx in index_list if (idx not in valid_list)]
 
     return x[train_list], y[train_list], x[valid_list], y[valid_list]
+
+
+
+def checkNumApprox(x,y):
+    model = Neuralnetwork(config)
+    model.forward(x, targets=y)
+    # index = [40,5]
+    index = [5,2]
+    train_loss_0 = model.loss(model.y, model.targets)
+    i = 4
+    
+    temp = model.layers[i].w[index[0]][index[1]]
+    model.backward()
+    gradient_back = model.layers[i].d_w[index[0]][index[1]]
+    # gradient_back = model.layers[i].d_b[index[1]]
+    ep = 0.001
+    epsilon_val = temp*ep
+    model.layers[i].w[index[0]][index[1]] = temp-epsilon_val
+    model.forward(x, targets=y)
+    train_loss_1 = model.loss(model.y, model.targets)
+    model.layers[i].w[index[0]][index[1]] = temp+epsilon_val
+    model.forward(x, targets=y)
+    train_loss_2 = model.loss(model.y, model.targets)
+    gradient_approx = (train_loss_2 - train_loss_1)/(2*epsilon_val)
+    print(gradient_approx-gradient_back)
+    print(epsilon_val)
+    print((gradient_approx-gradient_back)/(epsilon_val**2))
 
 
 if __name__ == "__main__":
@@ -484,6 +535,9 @@ if __name__ == "__main__":
     x_train, y_train = load_data(path="./data", mode="train")
     x_test,  y_test  = load_data(path="./data", mode="test")
     
+    # part b
+    # checkNumApprox(x_train[:10,:],y_train[:10])
+    
     # TODO: Create splits for validation data here.
     # x_val, y_val = ...
     x_train, y_train, x_valid, y_valid = data_split(x_train, y_train, 0.2)
@@ -493,7 +547,10 @@ if __name__ == "__main__":
 
     # Load parameters with least validation loss
     model.load_parameters()
-    
+    train_acc = test(model, x_train, y_train)
+    print(f'Train_accuracy: {train_acc}')
+    valid_acc = test(model, x_valid, y_valid)
+    print(f'Valid_accuracy: {valid_acc}')
     test_acc = test(model, x_test, y_test)
     print(f'Test_accuracy: {test_acc}')
 
@@ -505,6 +562,7 @@ if __name__ == "__main__":
     plt.plot(train_metrics['epochs'], train_metrics['valid_loss'], label='validation')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
+    plt.title('Loss vs no. of epochs')
     plt.legend()
     plt.show()
 
@@ -513,6 +571,6 @@ if __name__ == "__main__":
     plt.plot(train_metrics['epochs'], train_metrics['valid_accuracy'], label='validation')
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
+    plt.title('Accuracy vs no. of epochs')
     plt.legend()
     plt.show()
-    
