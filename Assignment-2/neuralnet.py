@@ -25,20 +25,11 @@ def load_config(path):
     return yaml.load(open(path + 'config.yaml', 'r'), Loader=yaml.SafeLoader)
 
 
-def find_metrics(inp):
-    """
-    to find mean and standard deviation
-    """
-    global zscore_metrics
-    zscore_metrics = [inp.mean(axis=0, keepdims=True),inp.std(axis=0, keepdims=True)]
-    pass
-
-
 def normalize_data(inp):
     """
     TODO: Normalize your inputs here to have 0 mean and unit variance.
     """
-    return (inp - zscore_metrics[0]) / zscore_metrics[1]
+    return (inp - inp.mean()) / inp.std()
 
 
 def one_hot_encoding(labels, num_classes=10):
@@ -68,7 +59,6 @@ def load_data(path, mode='train'):
             label = images_dict[b'labels']
             labels.extend(label)
             images.extend(data)
-        find_metrics(np.array(images))
         normalized_images = normalize_data(np.array(images))
         one_hot_labels = one_hot_encoding(labels, num_classes=10)
         return np.array(normalized_images), np.array(one_hot_labels)
@@ -280,6 +270,7 @@ class Layer():
     def update_parameters(self, lr, l2_penalty = 0, momentum = None):
 
         self.d_w = self.d_w + l2_penalty * self.w
+
         if momentum:
             w_delta = self.d_w + momentum * self.delta_w_old
             b_delta = self.d_b + momentum * self.delta_b_old
@@ -360,7 +351,6 @@ class Neuralnetwork():
         '''
         TODO: compute the categorical cross-entropy loss and return it.
         '''
-        logits = np.where(logits > 0.0000000001, logits, np.exp(-10))
         loss_val = -np.sum(np.multiply(targets, np.log(logits))) / targets.shape[0]
         # l2 penalty
         if self.l2_penalty:
@@ -410,7 +400,6 @@ def generate_batch(x, y, bs=1, shuffle=True):
         index = np.random.permutation(len(x))
     else:
         index = list(range(len(x)))
-
     for idx in range(0, len(x) - bs + 1, bs):
         index_final = index[idx:idx + bs]
         yield x[index_final], y[index_final]
@@ -471,6 +460,7 @@ def test(model, x_test, y_test):
     """
     TODO: Calculate and return the accuracy on the test set.
     """
+
     return model.predict(x_test, y_test)
 
 
