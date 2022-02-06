@@ -446,7 +446,11 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
             train_accuracy_batch.append(accuracy(model.predict(x),y))
 
         train_loss = np.mean(np.array(train_loss_batch))
+        model.forward(x_train, targets=y_train)
+        train_loss = model.loss(model.y, model.targets)
+        train_loss_batch.append(train_loss)
         train_accuracy = np.mean(np.array(train_accuracy_batch))
+        train_accuracy = accuracy(model.predict(x_train),y_train)
         model.forward(x_valid, targets=y_valid)
         valid_loss = model.loss(model.y, targets=y_valid)
         valid_accuracy = accuracy(model.predict(x_valid), y_valid)

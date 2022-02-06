@@ -22,10 +22,10 @@ early_stop: True
 early_stop_epoch: 5
 
 # Regularization constant
-L2_penalty: 0
+L2_penalty: 0.005
 
 # Use momentum for training
-momentum: False
+momentum: True
 
 # Value for the parameter 'gamma' in momentum
 momentum_gamma: 0.9
