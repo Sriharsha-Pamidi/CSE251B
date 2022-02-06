@@ -537,42 +537,41 @@ if __name__ == "__main__":
     x_test,  y_test  = load_data(path="./data", mode="test")
     
     # part b
-    checkNumApprox(x_train[:10,:],y_train[:10])
+    # checkNumApprox(x_train[:10,:],y_train[:10])
     
-    # # TODO: Create splits for validation data here.
-    # # x_val, y_val = ...
-    # x_train, y_train, x_valid, y_valid = data_split(x_train, y_train, 0.2)
-    #
-    # # TODO: train the model
-    # train_metrics = train(model, x_train, y_train, x_valid, y_valid, config)
-    #
-    # # Load parameters with least validation loss
-    # model.load_parameters()
-    # train_acc = test(model, x_train, y_train)
-    # print(f'Train_accuracy: {train_acc}')
-    # valid_acc = test(model, x_valid, y_valid)
-    # print(f'Valid_accuracy: {valid_acc}')
-    # test_acc = test(model, x_test, y_test)
-    # print(f'Test_accuracy: {test_acc}')
-    #
-    # # TODO: Plots
-    # # plt.plot(...)
-    #
-    # plt.figure(1)
-    # plt.plot(train_metrics['epochs'], train_metrics['train_loss'], label='train')
-    # plt.plot(train_metrics['epochs'], train_metrics['valid_loss'], label='validation')
-    # plt.xlabel('Epochs')
-    # plt.ylabel('Loss')
-    # plt.title('Loss vs no. of epochs')
-    # plt.legend()
-    # plt.show()
-    #
-    # plt.figure(2)
-    # plt.plot(train_metrics['epochs'], train_metrics['train_accuracy'], label='train')
-    # plt.plot(train_metrics['epochs'], train_metrics['valid_accuracy'], label='validation')
-    # plt.xlabel('Epochs')
-    # plt.ylabel('Accuracy')
-    # plt.title('Accuracy vs no. of epochs')
-    # plt.legend()
-    # plt.show()
-    #
+    # TODO: Create splits for validation data here.
+    # x_val, y_val = ...
+    x_train, y_train, x_valid, y_valid = data_split(x_train, y_train, 0.2)
+
+    # TODO: train the model
+    train_metrics = train(model, x_train, y_train, x_valid, y_valid, config)
+
+    # Load parameters with least validation loss
+    model.load_parameters()
+    train_acc = test(model, x_train, y_train)
+    print(f'Train_accuracy: {train_acc}')
+    valid_acc = test(model, x_valid, y_valid)
+    print(f'Valid_accuracy: {valid_acc}')
+    test_acc = test(model, x_test, y_test)
+    print(f'Test_accuracy: {test_acc}')
+
+    # TODO: Plots
+    # plt.plot(...)
+
+    plt.figure(1)
+    plt.plot(train_metrics['epochs'], train_metrics['train_loss'], label='train')
+    plt.plot(train_metrics['epochs'], train_metrics['valid_loss'], label='validation')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Loss vs no. of epochs')
+    plt.legend()
+    plt.show()
+
+    plt.figure(2)
+    plt.plot(train_metrics['epochs'], train_metrics['train_accuracy'], label='train')
+    plt.plot(train_metrics['epochs'], train_metrics['valid_accuracy'], label='validation')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.title('Accuracy vs no. of epochs')
+    plt.legend()
+    plt.show()
