@@ -422,6 +422,7 @@ def generate_batch(x, y, bs=1, shuffle=True):
 def accuracy(y_pred,y):
     return np.sum(np.multiply(y_pred,y))/y.shape[0]
     
+    
 def train(model, x_train, y_train, x_valid, y_valid, config):
     """
     TODO: Train your model here.
@@ -495,7 +496,6 @@ def data_split(x, y, ratio=0.1):
     train_list = [idx for idx in index_list if (idx not in valid_list)]
 
     return x[train_list], y[train_list], x[valid_list], y[valid_list]
-
 
 
 def checkNumApprox(x,y):
