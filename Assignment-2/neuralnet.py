@@ -151,8 +151,6 @@ class Activation():
         """
         Compute the backward pass.
         """
-        grad = None
-
         if self.activation_type == "sigmoid":
             grad = self.grad_sigmoid()
 
@@ -165,14 +163,14 @@ class Activation():
         elif self.activation_type == "leakyReLU":
             grad = self.grad_leakyReLU()
 
-        return grad * delta
+        return np.multiply(grad, delta)
 
     def sigmoid(self, x):
         """
         TODO: Implement the sigmoid activation here.
         """
-        epsilon = 10
-        x = x.clip(-epsilon, epsilon)
+        epsilon  = 10
+        x.clip(-epsilon,epsilon)
         return 1 / (1 + np.exp(-x))
 
     def tanh(self, x):
@@ -241,6 +239,7 @@ class Layer():
         np.random.seed(42)
         self.w = np.random.randn(in_units, out_units)    # Declare the Weight matrix
         self.b = np.random.randn(1, out_units)    # Create a placeholder for Bias
+
         self.x = None    # Save the input to forward in this
         self.a = None    # Save the output of forward pass in this (without activation)
 
@@ -276,6 +275,7 @@ class Layer():
         computes gradient for its weights and the delta to pass to its previous layers.
         Return self.dx
         """
+
         self.d_x = delta.dot(self.w.T)
         self.d_w = -self.x.T.dot(delta) / (self.x.shape[0] * 10)
         self.d_b = -delta.sum(axis=0) / (self.x.shape[0] * 10)
@@ -349,25 +349,24 @@ class Neuralnetwork():
         self.targets = targets
 
         # Forward Path
+
         Input = x   # global input variable which is recalculated for every layer
         for layer in self.layers:
             Input = layer.forward(Input)
 
         # Softmax Activation
         self.y = softmax(Input)
+        return self.y
 
-        if targets is None:
-            return self.y
-        else:
-            loss = self.loss(self.y, targets)
-            return self.y, loss
 
     def loss(self, logits, targets):
         '''
         TODO: compute the categorical cross-entropy loss and return it.
         '''
+
         loss_val = -np.sum(np.multiply(targets, np.log(logits))) / (targets.shape[0]*10)
         # l2 penalty
+        a = loss_val
         if self.l2_penalty:
             for layer in self.layers:
                 if type(layer) == Layer:
@@ -422,7 +421,7 @@ def generate_batch(x, y, bs=1, shuffle=True):
 def accuracy(y_pred,y):
     return np.sum(np.multiply(y_pred,y))/y.shape[0]
     
-    
+
 def train(model, x_train, y_train, x_valid, y_valid, config):
     """
     TODO: Train your model here.
@@ -485,7 +484,6 @@ def test(model, x_test, y_test):
     """
     TODO: Calculate and return the accuracy on the test set.
     """
-
     return accuracy(model.predict(x_test), y_test)
 
 
