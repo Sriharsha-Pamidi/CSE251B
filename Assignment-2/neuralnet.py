@@ -100,7 +100,7 @@ def softmax(x):
     return exp_x
 
 
-class Activation():
+train_loss_batchclass Activation():
     """
     The class implements different types of activation functions for
     your neural network layers.
@@ -237,28 +237,27 @@ class Layer():
         Define the architecture and create placeholder.
         """
         np.random.seed(42)
-        self.w = np.random.randn(in_units, out_units)    # Declare the Weight matrix
-        self.b = np.random.randn(1, out_units)    # Create a placeholder for Bias
-
-        self.x = None    # Save the input to forward in this
-        self.a = None    # Save the output of forward pass in this (without activation)
-
-        self.d_x = None  # Save the gradient w.r.t x in this
-        self.d_w = None  # Save the gradient w.r.t w in this
-        self.d_b = None  # Save the gradient w.r.t b in this
+        self.w = np.random.randn(in_units, out_units)  # Declare the Weight matrix
+        self.b = np.random.randn(1, out_units)  # Create a placeholder for Bias
+        self.x = np.random.randn(1, in_units)  # Save the input to forward in this
+        self.a = np.random.randn(1, out_units)  # Save the output of forward pass in this (without activation)
+        
+        self.d_x = np.zeros((1, in_units))  # Save the gradient w.r.t x in this
+        self.d_w = np.zeros((in_units, out_units))  # Save the gradient w.r.t w in this
+        self.d_b = np.zeros((1, out_units))  # Save the gradient w.r.t b in this
+        
+        self.delta_w_old = 0  # Save delta w
+        self.delta_b_old = 0  # Save delta b
         
         self.w_min = self.w  # Store the weight matrix
         self.b_min = self.b  # Store the bias
-
-        self.delta_w_old = 0  # Save delta w
-        self.delta_b_old = 0  # Save delta b
-
+    
     def __call__(self, x):
         """
         Make layer callable.
         """
         return self.forward(x)
-
+    
     def forward(self, x):
         """
         TODO: Compute the forward pass through the layer here.
@@ -268,42 +267,32 @@ class Layer():
         self.x = x
         self.a = np.dot(x, self.w) + self.b
         return self.a
-        
+    
     def backward(self, delta):
         """
         TODO: Write the code for backward pass. This takes in gradient from its next layer as input,
         computes gradient for its weights and the delta to pass to its previous layers.
         Return self.dx
         """
-
+        
+        self.d_w = -self.x.T.dot(delta)
+        self.d_b = -delta.sum(axis=0)
         self.d_x = delta.dot(self.w.T)
-        self.d_w = -self.x.T.dot(delta) / (self.x.shape[0] * 10)
-        self.d_b = -delta.sum(axis=0) / (self.x.shape[0] * 10)
         
         return self.d_x
-
-    def update_parameters(self, lr, l2_penalty = 0, momentum = None):
-
+    
+    def update_parameters(self, lr, l2_penalty = 0):
         self.d_w = self.d_w + l2_penalty * self.w
-
-        if momentum:
-            w_delta = self.d_w + momentum * self.delta_w_old
-            b_delta = self.d_b + momentum * self.delta_b_old
-
-            self.delta_w_old, self.delta_b_old = w_delta, b_delta
-            
-            self.w -= lr * w_delta
-            self.b -= lr * b_delta
-            
-        else:
-            self.w -= lr * self.d_w
-            self.b -= lr * self.d_b
-
+        self.w -= lr * self.d_w
+        self.b -= lr * self.d_b
+    
     def store_parameters(self):
-        self.w_min, self.b_min = self.w, self.b
-
+        self.w_min = self.w
+        self.b_min = self.b
+    
     def load_parameters(self):
-        self.w, self.b = self.w_min, self.b_min
+        self.w = self.w_min
+        self.b = self.b_min
 
 
 class Neuralnetwork():
@@ -315,7 +304,7 @@ class Neuralnetwork():
         # >>> output = net(input)
         # >>> net.backward()
     """
-
+    
     def __init__(self, config):
         """
         Create the Neural Network using config.
@@ -325,40 +314,37 @@ class Neuralnetwork():
         self.y = None        # Save the output vector of model in this
         self.targets = None  # Save the targets in forward in this variable
         self.l2_penalty = config['L2_penalty']
-        self.momentum = config['momentum_gamma'] if config['momentum'] else None
         self.lr = config['learning_rate']
-
+        
         # Add layers specified by layer_specs.
         for i in range(len(config['layer_specs']) - 1):
-            self.layers.append(Layer(config['layer_specs'][i], config['layer_specs'][i+1]))
+            self.layers.append(Layer(config['layer_specs'][i], config['layer_specs'][i + 1]))
             if i < len(config['layer_specs']) - 2:
                 self.layers.append(Activation(config['activation']))
-
-    def __call__(self, x, targets=None):
+    
+    def __call__(self, x, targets = None):
         """
         Make NeuralNetwork callable.
         """
         return self.forward(x, targets)
-
-    def forward(self, x, targets=None):
+    
+    def forward(self, x, targets = None):
         """
         TODO: Compute forward pass through all the layers in the network and return it.
         If targets are provided, return loss as well.
         """
         self.x = x
         self.targets = targets
-
+        
         # Forward Path
-
-        Input = x   # global input variable which is recalculated for every layer
+        Input = x  ## global input variable which is recalculated for every layer
         for layer in self.layers:
             Input = layer.forward(Input)
-
+        
         # Softmax Activation
         self.y = softmax(Input)
         return self.y
-
-
+    
     def loss(self, logits, targets):
         '''
         TODO: compute the categorical cross-entropy loss and return it.
@@ -388,7 +374,7 @@ class Neuralnetwork():
     def update_parameters(self):
         for layer in self.layers[::-1]:
             if type(layer) == Layer:
-                layer.update_parameters(self.lr, l2_penalty=self.l2_penalty, momentum=self.momentum)
+                layer.update_parameters(self.lr, l2_penalty=self.l2_penalty)
 
     def store_parameters(self):
         for layer in self.layers:
@@ -427,7 +413,7 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
     TODO: Train your model here.
     Implement batch SGD to train the model.
     Implement Early Stopping.
-    Use config to set parameters for training like learning rate, momentum, etc.
+    Use config to set parameters for training like learning rate, etc.
     """
 
     valid_accuracy_max = -float('inf')
