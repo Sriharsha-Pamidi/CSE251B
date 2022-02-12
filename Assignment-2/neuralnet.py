@@ -33,6 +33,7 @@ def find_metrics(inp):
     zscore_metrics = [inp.mean(axis=0),inp.std(axis=0)]
     return
 
+
 def normalize_data(inp):
     """
     TODO: Normalize your inputs here to have 0 mean and unit variance.
@@ -238,18 +239,19 @@ class Layer():
         np.random.seed(42)
         self.w = np.random.randn(in_units, out_units)    # Declare the Weight matrix
         self.b = np.random.randn(1, out_units)    # Create a placeholder for Bias
-        self.x =  np.random.randn(1,in_units)    # Save the input to forward in this
-        self.a = np.random.randn(1,out_units)    # Save the output of forward pass in this (without activation)
+
+        self.x = None    # Save the input to forward in this
+        self.a = None    # Save the output of forward pass in this (without activation)
+
+        self.d_x = None  # Save the gradient w.r.t x in this
+        self.d_w = None  # Save the gradient w.r.t w in this
+        self.d_b = None  # Save the gradient w.r.t b in this
         
-        self.d_x = np.zeros((1,in_units))  # Save the gradient w.r.t x in this
-        self.d_w = np.zeros((in_units, out_units))  # Save the gradient w.r.t w in this
-        self.d_b = np.zeros((1,out_units))  # Save the gradient w.r.t b in this
+        self.w_min = self.w  # Store the weight matrix
+        self.b_min = self.b  # Store the bias
 
         self.delta_w_old = 0  # Save delta w
         self.delta_b_old = 0  # Save delta b
-
-        self.w_min = self.w  # Store the weight matrix
-        self.b_min = self.b  # Store the bias
 
     def __call__(self, x):
         """
@@ -273,15 +275,14 @@ class Layer():
         computes gradient for its weights and the delta to pass to its previous layers.
         Return self.dx
         """
-        scale_size = self.x.shape[0]*10
-        self.d_w = -self.x.T.dot(delta) / scale_size
-        self.d_b = -delta.sum(axis=0) / scale_size
-        
+
         self.d_x = delta.dot(self.w.T)
+        self.d_w = -self.x.T.dot(delta) / (self.x.shape[0] * 10)
+        self.d_b = -delta.sum(axis=0) / (self.x.shape[0] * 10)
         
         return self.d_x
 
-    def update_parameters(self, lr, l2_penalty=0, momentum=None):
+    def update_parameters(self, lr, l2_penalty = 0, momentum = None):
 
         self.d_w = self.d_w + l2_penalty * self.w
 
@@ -289,23 +290,20 @@ class Layer():
             w_delta = self.d_w + momentum * self.delta_w_old
             b_delta = self.d_b + momentum * self.delta_b_old
 
+            self.delta_w_old, self.delta_b_old = w_delta, b_delta
+            
             self.w -= lr * w_delta
             self.b -= lr * b_delta
-
-            self.delta_w_old = w_delta
-            self.delta_b_old = b_delta
-
+            
         else:
             self.w -= lr * self.d_w
             self.b -= lr * self.d_b
 
     def store_parameters(self):
-        self.w_min = self.w
-        self.b_min = self.b
+        self.w_min, self.b_min = self.w, self.b
 
     def load_parameters(self):
-        self.w = self.w_min
-        self.b = self.b_min
+        self.w, self.b = self.w_min, self.b_min
 
 
 class Neuralnetwork():
@@ -351,7 +349,8 @@ class Neuralnetwork():
         self.targets = targets
 
         # Forward Path
-        Input = x   ## global input variable which is recalculated for every layer
+
+        Input = x   # global input variable which is recalculated for every layer
         for layer in self.layers:
             Input = layer.forward(Input)
 
@@ -364,16 +363,14 @@ class Neuralnetwork():
         '''
         TODO: compute the categorical cross-entropy loss and return it.
         '''
-        scale_size = targets.shape[0]
-        # print(targets.shape)
-        loss_val = -np.sum(np.multiply(targets, np.log(logits))) / scale_size
 
+        loss_val = -np.sum(np.multiply(targets, np.log(logits))) / (targets.shape[0]*10)
         # l2 penalty
         a = loss_val
         if self.l2_penalty:
             for layer in self.layers:
-                if isinstance(layer, Layer):
-                    loss_val += (np.sum(layer.w ** 2)) * self.l2_penalty / scale_size
+                if type(layer) == Layer:
+                    loss_val += (np.sum(layer.w ** 2)) * self.l2_penalty / (targets.shape[0]*10)
         return loss_val
 
     def backward(self):
@@ -383,24 +380,24 @@ class Neuralnetwork():
         '''
         delta = self.targets - self.y
         for layer in self.layers[::-1]:
-            if isinstance(layer, Layer):
+            if type(layer) == Layer:
                 delta = layer.backward(delta)
             else:
                 delta = layer.backward(delta)
 
     def update_parameters(self):
         for layer in self.layers[::-1]:
-            if isinstance(layer, Layer):
+            if type(layer) == Layer:
                 layer.update_parameters(self.lr, l2_penalty=self.l2_penalty, momentum=self.momentum)
 
     def store_parameters(self):
         for layer in self.layers:
-            if isinstance(layer, Layer):
+            if type(layer) == Layer:
                 layer.store_parameters()
 
     def load_parameters(self):
         for layer in self.layers:
-            if isinstance(layer, Layer):
+            if type(layer) == Layer:
                 layer.load_parameters()
 
     def predict(self, x):
@@ -410,8 +407,9 @@ class Neuralnetwork():
         return y
 
 
-def generate_batch(x, y, bs=1, shuffle_En=True):
-    if shuffle_En:
+def generate_batch(x, y, bs=1, shuffle=True):
+    # Function taken from PA1
+    if shuffle:
         index = np.random.permutation(len(x))
     else:
         index = list(range(len(x)))
@@ -423,6 +421,7 @@ def generate_batch(x, y, bs=1, shuffle_En=True):
 def accuracy(y_pred,y):
     return np.sum(np.multiply(y_pred,y))/y.shape[0]
     
+
 def train(model, x_train, y_train, x_valid, y_valid, config):
     """
     TODO: Train your model here.
@@ -432,13 +431,13 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
     """
 
     valid_accuracy_max = -float('inf')
-    valid_accuracy_decrease = 0
+    early_stop_count = 0
     train_metric = {'epochs': [], 'train_loss': [], 'train_accuracy': [], 'valid_loss': [], 'valid_accuracy': []}
 
     start_time = time.time()
     for epoch in range(config['epochs']):
         train_loss_batch, train_accuracy_batch = [], []
-        for x, y in generate_batch(x_train, y_train, bs= config['batch_size'], shuffle_En=True):
+        for x, y in generate_batch(x_train, y_train, bs=config['batch_size'], shuffle=True):
             model.forward(x, targets=y)
             train_loss = model.loss(model.y,model.targets)
             train_loss_batch.append(train_loss)
@@ -447,15 +446,19 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
             train_accuracy_batch.append(accuracy(model.predict(x),y))
 
         train_loss = np.mean(np.array(train_loss_batch))
+        model.forward(x_train, targets=y_train)
+        train_loss = model.loss(model.y, model.targets)
+        train_loss_batch.append(train_loss)
         train_accuracy = np.mean(np.array(train_accuracy_batch))
+        train_accuracy = accuracy(model.predict(x_train),y_train)
         model.forward(x_valid, targets=y_valid)
         valid_loss = model.loss(model.y, targets=y_valid)
         valid_accuracy = accuracy(model.predict(x_valid), y_valid)
 
         if epoch % 10 == 0:
             print('Epoch {}, Time {} seconds'.format(epoch + 1, time.time() - start_time))
-            print('Train_loss = {:.4f}, Valid_loss = {:.4f}, Valid_accuracy = {:.4f}'.format(train_loss, valid_loss,
-                                                                                             valid_accuracy))
+            print('Train_loss = {:.4f}, Valid_loss = {:.4f}, Valid_accuracy = {:.4f}, Train_accuracy = {:.4f}'.format(train_loss, valid_loss,
+                                                                                             valid_accuracy,train_accuracy))
 
         train_metric['epochs'].append(epoch + 1)
         train_metric['train_loss'].append(train_loss)
@@ -466,12 +469,12 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
         if valid_accuracy > valid_accuracy_max:
             model.store_parameters()
             valid_accuracy_max = valid_accuracy
-            valid_accuracy_decrease = 0
+            early_stop_count = 0
         else:
-            valid_accuracy_decrease += 1
+            early_stop_count += 1
     
         if config['early_stop']:
-            if valid_accuracy_decrease > config['early_stop_epoch']:
+            if early_stop_count > config['early_stop_epoch']:
                 break
 
     return train_metric
@@ -481,25 +484,42 @@ def test(model, x_test, y_test):
     """
     TODO: Calculate and return the accuracy on the test set.
     """
-    y_pred = model.predict(x_test)
-    return accuracy(y_pred,y_test)
+    return accuracy(model.predict(x_test), y_test)
 
 
 def data_split(x, y, ratio=0.1):
-    val_num = int(np.floor(x.shape[0] * ratio))
+    # Function Implementation Taken from PA1
+    index_list = list(range(x.shape[0]))
+    valid_list = random.sample(index_list, int(np.floor(x.shape[0] * ratio)))
+    train_list = [idx for idx in index_list if (idx not in valid_list)]
 
-    alllist = list(range(x.shape[0]))
-    
-    val_list = random.sample(alllist, val_num)
-    
-    train_list = [idx for idx in alllist if (idx not in val_list)]
-    
-    x_train = x[train_list]
-    y_train = y[train_list]
-    x_val = x[val_list]
-    y_val = y[val_list]
+    return x[train_list], y[train_list], x[valid_list], y[valid_list]
 
-    return x_train, y_train, x_val, y_val
+
+def checkNumApprox(x,y):
+    model = Neuralnetwork(config)
+    model.forward(x, targets=y)
+    # index = [40,5]
+    index = [5,2]
+    train_loss_0 = model.loss(model.y, model.targets)
+    i = 4
+    
+    temp = model.layers[i].w[index[0]][index[1]]
+    model.backward()
+    gradient_back = model.layers[i].d_w[index[0]][index[1]]
+    # gradient_back = model.layers[i].d_b[index[1]]
+    ep = 0.001
+    epsilon_val = temp*ep
+    model.layers[i].w[index[0]][index[1]] = temp-epsilon_val
+    model.forward(x, targets=y)
+    train_loss_1 = model.loss(model.y, model.targets)
+    model.layers[i].w[index[0]][index[1]] = temp+epsilon_val
+    model.forward(x, targets=y)
+    train_loss_2 = model.loss(model.y, model.targets)
+    gradient_approx = (train_loss_2 - train_loss_1)/(2*epsilon_val)
+    print(gradient_approx-gradient_back)
+    print(epsilon_val)
+    print((gradient_approx-gradient_back)/(epsilon_val**2))
 
 
 if __name__ == "__main__":
@@ -513,6 +533,9 @@ if __name__ == "__main__":
     x_train, y_train = load_data(path="./data", mode="train")
     x_test,  y_test  = load_data(path="./data", mode="test")
     
+    # part b
+    # checkNumApprox(x_train[:10,:],y_train[:10])
+    
     # TODO: Create splits for validation data here.
     # x_val, y_val = ...
     x_train, y_train, x_valid, y_valid = data_split(x_train, y_train, 0.2)
@@ -522,7 +545,6 @@ if __name__ == "__main__":
 
     # Load parameters with least validation loss
     model.load_parameters()
-    
     train_acc = test(model, x_train, y_train)
     print(f'Train_accuracy: {train_acc}')
     valid_acc = test(model, x_valid, y_valid)
@@ -550,4 +572,3 @@ if __name__ == "__main__":
     plt.title('Accuracy vs no. of epochs')
     plt.legend()
     plt.show()
-    

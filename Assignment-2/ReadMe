@@ -1,0 +1,16 @@
+To Run the model:
+
+1) change the layer_specs in config.yaml to layer_specs: [3072, 64, 64, 10]
+layer_specs: [784, 50, 50, 10] -- is used to get the values in sync with the checker.
+
+2) use command python3 neuralnet.py
+
+
+
+To Run the checker:
+1) check the layer_specs in config.yaml if they are compatible with the values coded in the checker.
+
+2)use command python3 checker.py
+
+
+
