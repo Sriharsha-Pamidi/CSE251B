@@ -97,11 +97,11 @@ class TASDataset(Dataset):
         return len(self.paths)
     
     def __getitem__(self, idx):        
-            
+        
         image = np.asarray(PIL.Image.open(self.paths[idx][0]).resize((self.width, self.height)))
         mask_image = np.asarray(PIL.Image.open(self.paths[idx][1]).resize((self.width, self.height), PIL.Image.NEAREST))
         mask =  rgb2vals(mask_image, self.color2class)
-
+        
         if self.transform:
             image = self.transform(image).float()
 

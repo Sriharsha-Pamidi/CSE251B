@@ -7,70 +7,71 @@ from torch.utils.data import DataLoader
 import torch
 import gc
 import copy
-
+from matplotlib import pyplot as plt
+import time
 
 # TODO: Some missing values are represented by '__'. You need to fill these up.
-
-train_dataset = TASDataset('tas500v1.1') 
-val_dataset = TASDataset('tas500v1.1', eval=True, mode='val')
-test_dataset = TASDataset('tas500v1.1', eval=True, mode='test')
-
-
-train_loader = DataLoader(dataset=train_dataset, batch_size= __, shuffle=True)
-val_loader = DataLoader(dataset=val_dataset, batch_size= __, shuffle=False)
-test_loader = DataLoader(dataset=test_dataset, batch_size= __, shuffle=False)
 
 def init_weights(m):
     if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
         torch.nn.init.xavier_uniform_(m.weight.data)
         torch.nn.init.normal_(m.bias.data) #xavier not applicable for biases   
 
-epochs = __       
-criterion = __ # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
-n_class = 10
-fcn_model = FCN(n_class=n_class)
-fcn_model.apply(init_weights)
 
-optimizer = __ # choose an optimizer
 
-device = __ # determine which device to use (gpu or cpu)
-fcn_model = fcn_model.__ #transfer the model to the device
 
 def train():
     best_iou_score = 0.0
-    
+    train_metric = {'epochs': [], 'train_loss': [],'valid_loss': [],'Accuracy': [],'IOU_score': []}
     for epoch in range(epochs):
         ts = time.time()
         for iter, (inputs, labels) in enumerate(train_loader):
             # reset optimizer gradients
-            __
+            optimizer.zero_grad()
 
-            # both inputs and labels have to reside in the same device as the model's
-            inputs = inputs.__ #transfer the input to the same device as the model's
-            labels = labels.__ #transfer the labels to the same device as the model's
+            # # both inputs and labels have to reside in the same device as the model's
+            inputs = inputs.to(device) #transfer the input to the same device as the model's
+            labels = labels.to(device) #transfer the labels to the same device as the model's
 
-            outputs = fcn_model(inputs) #we will not need to transfer the output, it will be automatically in the same device as the model's!
-            
-            loss = __ #calculate loss
+            outputs = fcn_model(inputs) 
+            #we will not need to transfer the output, it will be automatically in the same device as the model's!
+            loss = criterion(outputs, labels.long())#calculate loss
             
             # backpropagate
-            __
+            loss.backward()
+
             # update the weights
-            __
+            optimizer.step()
 
             if iter % 10 == 0:
                 print("epoch{}, iter{}, loss: {}".format(epoch, iter, loss.item()))
         
         print("Finish epoch {}, time elapsed {}".format(epoch, time.time() - ts))
-        
+        train_metric['epochs'].append(epoch + 1)
+        train_metric['train_loss'].append(loss.item())
 
-        current_miou_score = val(epoch)
-        
+        val_loss , current_miou_score, current_accuracy = val(epoch)
+        train_metric['valid_loss'] = val_loss
+        train_metric['Accuracy'] = current_accuracy
+        train_metric['IOU_score']=  current_miou_score
+        print(f"\n\n")
+    
         if current_miou_score > best_iou_score:
             best_iou_score = current_miou_score
-            #save the best model
-            __
+            best_accuracy = current_accuracy
+            early_stop_count = 0
+        else:
+            early_stop_count += 1
             
+        if early_stop_count >= 3:
+            #save the best model
+            torch.save(fcn_model, "Models/model_adam_0p0005.pt")
+            break
+            
+
+    print("best IOU === ", best_iou_score)
+    print("best accuracy ===",best_accuracy)
+    return train_metric
     
 
 def val(epoch):
@@ -82,40 +83,120 @@ def val(epoch):
 
     with torch.no_grad(): # we don't need to calculate the gradient in the validation/testing
 
-        for iter, (input, label) in enumerate(val_loader):
+        for iter, (inputs, labels) in enumerate(val_loader):
 
             # both inputs and labels have to reside in the same device as the model's
-            input = input.__ #transfer the input to the same device as the model's
-            label = label.__ #transfer the labels to the same device as the model's
+            inputs = inputs.to(device) #transfer the input to the same device as the model's
+            labels = labels.to(device) #transfer the labels to the same device as the model's
 
-            output = fcn_model(input)
-
-            loss = __ #calculate the loss
-            losses.append(loss.item()) #call .item() to get the value from a tensor. The tensor can reside in gpu but item() will still work 
-
-            pred = __ # Make sure to include an argmax to get the prediction from the outputs of your model
-
-            mean_iou_scores.append(np.nanmean(iou(pred, label, n_class)))  # Complete this function in the util, notice the use of np.nanmean() here
+            outputs = fcn_model(inputs)
         
-            accuracy.append(pixel_acc(pred, label)) # Complete this function in the util
-
-
-    print(f"Loss at epoch: {epoch} is {np.mean(losses)}")
-    print(f"IoU at epoch: {epoch} is {np.mean(mean_iou_scores)}")
-    print(f"Pixel acc at epoch: {epoch} is {np.mean(accuracy)}")
-
-    fcn_model.train() #DONT FORGET TO TURN THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!
-
-    return np.mean(mean_iou_scores)
+            loss = criterion(outputs, labels.long())#calculate loss
+            losses.append(loss.item()) #call .item() to get the value from a tensor. The tensor can reside in gpu but item() will still work
+            outputs = outputs.data.cpu().numpy()
+            N, _, h, w = outputs.shape
+            pred = outputs.transpose(0, 2, 3, 1).reshape(-1, n_class).argmax(axis=1).reshape(N, h, w)
+            #valu,pred = torch.max(outputs) # Make sure to include an argmax to get the prediction from the outputs of your model
+            
+            labels = labels.data.cpu().numpy().reshape(N, h, w)
+            mean_iou_scores.append(np.nanmean(iou(pred, labels, n_class)))  # Complete this function in the util, notice the use of np.nanmean() here
+        
+            accuracy.append(pixel_acc(pred, labels)) # Complete this function in the util
+    fcn_model.train() #DONT FORGET TO TURN THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!    
+    return np.mean(losses), np.mean(mean_iou_scores), np.mean(accuracy)
 
 def test():
-    #TODO: load the best model and complete the rest of the function for testing
+    # TODO: load the best model and complete the rest of the function for testing
+    fcn_model.eval() # Put in eval mode (disables batchnorm/dropout) !
+    
+    losses = []
+    mean_iou_scores = []
+    accuracy = []
+
+    temp = [(inputs,labels) for iter,(inputs, labels) in enumerate(val_loader)]
+    mask_1 = temp[0][1][0]
+    image_1 = temp[0][0][0]
+    print(mask_1.size())
+    plt.imshow(mask_1)
+    plt.savefig('Images/Mask1 '+str(round(time.time()%10000))+".jpg")
+    plt.imshow(image_1.permute(1, 2, 0)  )
+    plt.savefig('Images/Image1 '+str(round(time.time()%10000))+".jpg")
+
+    with torch.no_grad(): # we don't need to calculate the gradient in the validation/testing
+
+        for iter, (inputs, labels) in enumerate(test_loader):
+
+            # both inputs and labels have to reside in the same device as the model's
+            inputs = inputs.to(device) #transfer the input to the same device as the model's
+            labels = labels.to(device) #transfer the labels to the same device as the model's
+
+            outputs = fcn_model(inputs)
+        
+            loss = criterion(outputs, labels.long())#calculate loss
+            losses.append(loss.item()) #call .item() to get the value from a tensor. The tensor can reside in gpu but item() will still work
+            outputs = outputs.data.cpu().numpy()
+            N, _, h, w = outputs.shape
+            pred = outputs.transpose(0, 2, 3, 1).reshape(-1, n_class).argmax(axis=1).reshape(N, h, w)
+            #valu,pred = torch.max(outputs) # Make sure to include an argmax to get the prediction from the outputs of your model
+            
+            labels = labels.data.cpu().numpy().reshape(N, h, w)
+            mean_iou_scores.append(np.nanmean(iou(pred, labels, n_class)))  # Complete this function in the util, notice the use of np.nanmean() here
+        
+            accuracy.append(pixel_acc(pred, labels)) # Complete this function in the util
+
+    fcn_model.train() #DONT FORGET TO TURN THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!    
+    return np.mean(losses), np.mean(mean_iou_scores), np.mean(accuracy)
+
+
+
+
+device = torch.device('cuda') # determine which device to use (gpu or cpu)
+use_gpu = torch.cuda.is_available()
+print("gpu availability ----------------->" , use_gpu)
+
+train_dataset = TASDataset('tas500v1.1') 
+val_dataset = TASDataset('tas500v1.1', eval=True, mode='val')
+test_dataset = TASDataset('tas500v1.1', eval=True, mode='test')
+
+bs = 16
+
+train_loader = DataLoader(dataset=train_dataset, batch_size= bs, shuffle=True)
+val_loader = DataLoader(dataset=val_dataset, batch_size= bs, shuffle=False)
+test_loader = DataLoader(dataset=test_dataset, batch_size= bs, shuffle=False)
+
+
 
 if __name__ == "__main__":
-    val(0)  # show the accuracy before training
-    train()
-    test()
     
+    epochs = 100
+    criterion = nn.CrossEntropyLoss()  # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
+    n_class = 10
+    fcn_model = FCN(n_class=n_class)
+    fcn_model.apply(init_weights)
+    optimizer = optim.Adam(fcn_model.parameters(), lr=0.0005)
+#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
+    #
+    fcn_model = fcn_model.to(device) #transfer the model to the device
+    
+    val(0)  # show the accuracy before training
+    train_metrics = train()
+    _ ,test_miou_score, test_accuracy = test()
+    print(f"Test Accuracy = ", test_accuracy)
+    print(f"Test IOU score = ", test_miou_score)
+    
+    plt.rcParams.update({'font.size': 30})
+    plt.figure(1)
+    fig = plt.figure(figsize=(15,15))
+    plt.plot(train_metrics['epochs'], train_metrics['train_loss'], label='train')
+    plt.plot(train_metrics['epochs'], train_metrics['valid_loss'], label='validation')
+    plt.xlabel('NUM OF EPOCHS')
+    plt.ylabel('LOSS')
+    plt.title("Loss Vs num of Epochs")
+    plt.legend()
+    plt.show()
+    fig.savefig('Images/Loss_plot '+str(round(time.time()%10000))+".jpg", bbox_inches='tight', dpi=150)
+    
+ 
     # housekeeping
-    gc.collect() 
+    gc.collect()
     torch.cuda.empty_cache()
