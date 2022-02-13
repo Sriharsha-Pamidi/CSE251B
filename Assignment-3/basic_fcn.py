@@ -43,8 +43,8 @@ class FCN(nn.Module):
         y2 = self.bn2(self.relu(self.deconv2(y1)))
         y3 = self.bn3(self.relu(self.deconv3(y2)))
         y4 = self.bn4(self.relu(self.deconv4(y3)))
-        y5 = self.bn5(self.relu(self.deconv5(y4)))
-        out_decoder = self.bn5(self.relu(self.deconv5(y5)))
+        out_decoder = self.bn5(self.relu(self.deconv5(y4)))
+#         out_decoder = self.bn5(self.relu(self.deconv5(y5)))
         # Complete the forward function for the rest of the decoder
         
         score = self.classifier(out_decoder)                   
