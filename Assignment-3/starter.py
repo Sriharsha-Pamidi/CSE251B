@@ -43,17 +43,16 @@ def train():
             # update the weights
             optimizer.step()
 
-            if iter % 10 == 0:
+            if iter % 20 == 0:
                 print("epoch{}, iter{}, loss: {}".format(epoch, iter, loss.item()))
         
-        print("Finish epoch {}, time elapsed {}".format(epoch, time.time() - ts))
         train_metric['epochs'].append(epoch + 1)
         train_metric['train_loss'].append(loss.item())
 
         val_loss , current_miou_score, current_accuracy = val(epoch)
-        train_metric['valid_loss'] = val_loss
-        train_metric['Accuracy'] = current_accuracy
-        train_metric['IOU_score']=  current_miou_score
+        train_metric['valid_loss'].append(val_loss)
+        train_metric['Accuracy'].append(current_accuracy)
+        train_metric['IOU_score'].append(current_miou_score)
         print(f"\n\n")
     
         if current_miou_score > best_iou_score:
@@ -63,9 +62,9 @@ def train():
         else:
             early_stop_count += 1
             
-        if early_stop_count >= 3:
+        if early_stop_count >= 5:
             #save the best model
-            torch.save(fcn_model, "Models/model_adam_0p0005.pt")
+            torch.save(fcn_model, "Models/model_adam_0p0005.pth")
             break
             
 
@@ -102,7 +101,12 @@ def val(epoch):
             mean_iou_scores.append(np.nanmean(iou(pred, labels, n_class)))  # Complete this function in the util, notice the use of np.nanmean() here
         
             accuracy.append(pixel_acc(pred, labels)) # Complete this function in the util
-    fcn_model.train() #DONT FORGET TO TURN THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!    
+    fcn_model.train() #DONT FORGET TO TURN THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!   
+    
+    
+    print(" IOU === ", np.mean(mean_iou_scores))
+    print(" accuracy ===",np.mean(accuracy))
+    
     return np.mean(losses), np.mean(mean_iou_scores), np.mean(accuracy)
 
 def test():
@@ -158,24 +162,28 @@ train_dataset = TASDataset('tas500v1.1')
 val_dataset = TASDataset('tas500v1.1', eval=True, mode='val')
 test_dataset = TASDataset('tas500v1.1', eval=True, mode='test')
 
-bs = 16
+batchsize = 16
 
-train_loader = DataLoader(dataset=train_dataset, batch_size= bs, shuffle=True)
-val_loader = DataLoader(dataset=val_dataset, batch_size= bs, shuffle=False)
-test_loader = DataLoader(dataset=test_dataset, batch_size= bs, shuffle=False)
+train_loader = DataLoader(dataset=train_dataset, batch_size= batchsize, shuffle=True)
+val_loader = DataLoader(dataset=val_dataset, batch_size= batchsize, shuffle=False)
+test_loader = DataLoader(dataset=test_dataset, batch_size= batchsize, shuffle=False)
 
 
 
 if __name__ == "__main__":
     
     epochs = 100
-    criterion = nn.CrossEntropyLoss()  # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
+    criterion = nn.CrossEntropyLoss() 
+    # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
+   
     n_class = 10
+    
     fcn_model = FCN(n_class=n_class)
     fcn_model.apply(init_weights)
-    optimizer = optim.Adam(fcn_model.parameters(), lr=0.0005)
-#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
-    #
+    
+    optimizer = optim.Adam(fcn_model.parameters(), lr=0.0001)
+    #optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
+  
     fcn_model = fcn_model.to(device) #transfer the model to the device
     
     val(0)  # show the accuracy before training
