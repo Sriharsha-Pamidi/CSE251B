@@ -25,11 +25,7 @@ def iou(pred, target, n_classes = 10):
 
 def pixel_acc(pred, target):
     #TODO complete this function, make sure you don't calculate the accuracy for undefined class ("9")
-    n_samples = 0
-    count = 0
-    for i in range(0,len(target)):
-        if target[i] != "9":
-            n_samples += 1
-            if target[i] == pred[i]:
-                count += 1
-    return count/n_samples
+    correct = ((pred == target) & (target != 9)).sum()
+    total   = (target != 9).sum()
+    return correct / total
+    
