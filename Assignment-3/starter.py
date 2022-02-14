@@ -33,10 +33,10 @@ def train():
             inputs = inputs.to(device) #transfer the input to the same device as the model's
             labels = labels.to(device) #transfer the labels to the same device as the model's
 
-            outputs = fcn_model(inputs) 
+            outputs = fcn_model(inputs)
             #we will not need to transfer the output, it will be automatically in the same device as the model's!
             loss = criterion(outputs, labels.long())#calculate loss
-            
+            loss.requires_grad = True
             # backpropagate
             loss.backward()
 
@@ -89,7 +89,6 @@ def val(epoch):
             labels = labels.to(device) #transfer the labels to the same device as the model's
 
             outputs = fcn_model(inputs)
-        
             loss = criterion(outputs, labels.long())#calculate loss
             losses.append(loss.item()) #call .item() to get the value from a tensor. The tensor can reside in gpu but item() will still work
             outputs = outputs.data.cpu().numpy()
@@ -101,6 +100,8 @@ def val(epoch):
             mean_iou_scores.append(np.nanmean(iou(pred, labels, n_class)))  # Complete this function in the util, notice the use of np.nanmean() here
         
             accuracy.append(pixel_acc(pred, labels)) # Complete this function in the util
+            
+            
     fcn_model.train() #DONT FORGET TO TURN THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!   
     
     
@@ -135,8 +136,8 @@ def test():
             labels = labels.to(device) #transfer the labels to the same device as the model's
 
             outputs = fcn_model(inputs)
-        
             loss = criterion(outputs, labels.long())#calculate loss
+            
             losses.append(loss.item()) #call .item() to get the value from a tensor. The tensor can reside in gpu but item() will still work
             outputs = outputs.data.cpu().numpy()
             N, _, h, w = outputs.shape
@@ -153,6 +154,28 @@ def test():
 
 
 
+class DiceLoss(nn.Module):
+    def __init__(self, weight=None, size_average=True):
+        super(DiceLoss, self).__init__()
+
+    def forward(self, inputs, targets, smooth=1):
+        
+        smooth = 1
+        inputs = inputs.data.cpu().numpy()
+        N, _, h, w = inputs.shape
+        inputs = inputs.transpose(0, 2, 3, 1).reshape(-1, n_class).argmax(axis=1).reshape(N, h, w)
+        inputs = torch.from_numpy(inputs)
+        
+        inputs = inputs.to(device) #transfer the input to the same device as the model's
+        targets= targets.to(device) #transfer the labels to the same device as the model's
+        
+        inputs = inputs.view(-1)
+        targets = targets.view(-1)
+        intersection = ((inputs == targets) & (targets != 9)).sum()
+        total   = (targets != 9).sum() + (inputs != 9).sum() 
+        dice = (2.*intersection + smooth)/(total + smooth)  
+        
+        return 1 - dice
 
 device = torch.device('cuda') # determine which device to use (gpu or cpu)
 use_gpu = torch.cuda.is_available()
@@ -162,7 +185,7 @@ train_dataset = TASDataset('tas500v1.1')
 val_dataset = TASDataset('tas500v1.1', eval=True, mode='val')
 test_dataset = TASDataset('tas500v1.1', eval=True, mode='test')
 
-batchsize = 16
+batchsize = 8
 
 train_loader = DataLoader(dataset=train_dataset, batch_size= batchsize, shuffle=True)
 val_loader = DataLoader(dataset=val_dataset, batch_size= batchsize, shuffle=False)
@@ -173,15 +196,31 @@ test_loader = DataLoader(dataset=test_dataset, batch_size= batchsize, shuffle=Fa
 if __name__ == "__main__":
     
     epochs = 100
-    criterion = nn.CrossEntropyLoss() 
+#     criterion = nn.CrossEntropyLoss() 
+    criterion = DiceLoss()
     # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
    
     n_class = 10
     
+   
+#     pretrained_model = models.resnet34(pretrained=True)
+#     for param in pretrained_model.parameters():
+#         param.requires_grad = False
+  
+#     num_ftrs =  pretrained_model.fc.in_features
+#     print("num of features ----------->", num_ftrs)
+    
+#     pretrained_model.fc = nn.Linear(num_ftrs, 512)
+    
+#     pretrained_model.fc = nn.Sequential(*list(pretrained_model.fc.children())[:-1])
+#     print(pretrained_model)
+#     fcn_model = FCN_TL(n_class=n_class,pretrained=pretrained_model)
+
     fcn_model = FCN(n_class=n_class)
     fcn_model.apply(init_weights)
     
-    optimizer = optim.Adam(fcn_model.parameters(), lr=0.0001)
+#     optimizer = optim.Adam(fcn_model.parameters(), lr=0.00005)
+    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.1, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
     #optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
   
     fcn_model = fcn_model.to(device) #transfer the model to the device
