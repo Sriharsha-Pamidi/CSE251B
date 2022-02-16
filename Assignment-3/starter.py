@@ -177,7 +177,6 @@ if __name__ == "__main__":
 #     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
     #
     fcn_model = fcn_model.to(device) #transfer the model to the device
-    
     val(0)  # show the accuracy before training
     train_metrics = train()
     _ ,test_miou_score, test_accuracy = test()
