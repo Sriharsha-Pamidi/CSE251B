@@ -154,9 +154,9 @@ device = torch.device('cuda') # determine which device to use (gpu or cpu)
 use_gpu = torch.cuda.is_available()
 print("gpu availability ----------------->" , use_gpu)
 
-train_dataset = TASDataset('../tas500v1.1')
-val_dataset = TASDataset('../tas500v1.1', eval=True, mode='val')
-test_dataset = TASDataset('../tas500v1.1', eval=True, mode='test')
+train_dataset = TASDataset('tas500v1.1')
+val_dataset = TASDataset('tas500v1.1', eval=True, mode='val')
+test_dataset = TASDataset('tas500v1.1', eval=True, mode='test')
 
 bs = 16
 
