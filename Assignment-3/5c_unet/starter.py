@@ -9,7 +9,6 @@ import gc
 import copy
 from matplotlib import pyplot as plt
 import time
-import unet_model
 
 # TODO: Some missing values are represented by '__'. You need to fill these up.
 
@@ -35,6 +34,7 @@ def train():
             labels = labels.to(device) #transfer the labels to the same device as the model's
 
             outputs = fcn_model(inputs) 
+            #print(labels.size())
             #we will not need to transfer the output, it will be automatically in the same device as the model's!
             loss = criterion(outputs, labels.long())#calculate loss
             
@@ -47,7 +47,6 @@ def train():
             if iter % 20 == 0:
                 print("epoch{}, iter{}, loss: {}".format(epoch, iter, loss.item()))
         
-        print("Finish epoch {}, time elapsed {}".format(epoch, time.time() - ts))
         train_metric['epochs'].append(epoch + 1)
         train_metric['train_loss'].append(loss.item())
 
@@ -91,6 +90,7 @@ def val(epoch):
             labels = labels.to(device) #transfer the labels to the same device as the model's
 
             outputs = fcn_model(inputs)
+            #print(outputs.size())
         
             loss = criterion(outputs, labels.long())#calculate loss
             losses.append(loss.item()) #call .item() to get the value from a tensor. The tensor can reside in gpu but item() will still work
@@ -162,11 +162,11 @@ device = torch.device('cuda') # determine which device to use (gpu or cpu)
 use_gpu = torch.cuda.is_available()
 print("gpu availability ----------------->" , use_gpu)
 
-train_dataset = TASDataset('../tas500v1.1')
-val_dataset = TASDataset('../tas500v1.1', eval=True, mode='val')
-test_dataset = TASDataset('../tas500v1.1', eval=True, mode='test')
+train_dataset = TASDataset('tas500v1.1') 
+val_dataset = TASDataset('tas500v1.1', eval=True, mode='val')
+test_dataset = TASDataset('tas500v1.1', eval=True, mode='test')
 
-batchsize = 2
+batchsize = 8
 
 train_loader = DataLoader(dataset=train_dataset, batch_size= batchsize, shuffle=True)
 val_loader = DataLoader(dataset=val_dataset, batch_size= batchsize, shuffle=False)
@@ -177,8 +177,11 @@ test_loader = DataLoader(dataset=test_dataset, batch_size= batchsize, shuffle=Fa
 if __name__ == "__main__":
     
     epochs = 100
-    criterion = nn.CrossEntropyLoss()  # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
+    criterion = nn.CrossEntropyLoss() 
+    # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
+   
     n_class = 10
+
     fcn_model = unet_model.UNet(n_channels=3, n_classes=n_class)
 #     fcn_model.apply(init_weights)
     optimizer = optim.AdamW(fcn_model.parameters(), lr=0.00005, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
