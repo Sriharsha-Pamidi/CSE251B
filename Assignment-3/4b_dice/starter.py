@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 import time
 import unet_model
 from dice_score import *
+import torch.nn.functional as F
 
 # TODO: Some missing values are represented by '__'. You need to fill these up.
 
@@ -39,7 +40,7 @@ def train():
             #we will not need to transfer the output, it will be automatically in the same device as the model's!
             loss = criterion(outputs, labels.long()) \
                         + dice_loss(F.softmax(outputs, dim=1).float(),
-                      F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                      F.one_hot(labels, fcn_model.n_classes).permute(0, 3, 1, 2).float(),
                       multiclass=True)
             #calculate loss
             
@@ -96,8 +97,10 @@ def val(epoch):
             labels = labels.to(device) #transfer the labels to the same device as the model's
 
             outputs = fcn_model(inputs)
-        
-            loss = criterion(outputs, labels.long())#calculate loss
+            loss = criterion(outputs, labels.long()) \
+                        + dice_loss(F.softmax(outputs, dim=1).float(),
+                      F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                      multiclass=True)
             losses.append(loss.item()) #call .item() to get the value from a tensor. The tensor can reside in gpu but item() will still work
             outputs = outputs.data.cpu().numpy()
             N, _, h, w = outputs.shape
