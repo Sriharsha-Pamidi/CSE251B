@@ -103,7 +103,9 @@ def val(epoch):
             mean_iou_scores.append(np.nanmean(iou(pred, labels, n_class)))  # Complete this function in the util, notice the use of np.nanmean() here
         
             accuracy.append(pixel_acc(pred, labels)) # Complete this function in the util
-    fcn_model.train() #DONT FORGET TO TURN THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!   
+            
+            
+    fcn_model.train() #DONT FORGET TO TURN THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!
     
     
     print(" IOU === ", np.mean(mean_iou_scores))
