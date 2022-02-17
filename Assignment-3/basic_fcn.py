@@ -130,8 +130,6 @@ class FCN_TL(nn.Module):
 
     def forward(self, x):
        
-        print ("input size ---->", x.size())
-        print("pretrained output size --------->",self.pretrained(x).size())
         y1 = self.bn1(self.relu(self.deconv1(self.pretrained(x))))
         y2 = self.bn2(self.relu(self.deconv2(y1)))
         y3 = self.bn3(self.relu(self.deconv3(y2)))

@@ -9,15 +9,14 @@ import gc
 import copy
 from matplotlib import pyplot as plt
 import time
-
+import tensorflow as tf
 # TODO: Some missing values are represented by '__'. You need to fill these up.
 
 def init_weights(m):
-    if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+    if  isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
+#     if  isinstance(m, nn.ConvTranspose2d):# or isinstance(m, nn.Conv2d):
         torch.nn.init.xavier_uniform_(m.weight.data)
         torch.nn.init.normal_(m.bias.data) #xavier not applicable for biases   
-
-
 
 
 def train():
@@ -35,7 +34,7 @@ def train():
 
             outputs = fcn_model(inputs)
             #we will not need to transfer the output, it will be automatically in the same device as the model's!
-            loss = criterion(outputs, labels.long())#calculate loss
+            loss = criterion(outputs, labels.long())+DiceLoss.forward(fcn_model,outputs,labels.long())#calculate loss
 #             loss.requires_grad = True
             # backpropagate
             loss.backward()
@@ -89,7 +88,7 @@ def val(epoch):
             labels = labels.to(device) #transfer the labels to the same device as the model's
 
             outputs = fcn_model(inputs)
-            loss = criterion(outputs, labels.long())#calculate loss
+            loss = criterion(outputs, labels.long())+DiceLoss.forward(fcn_model,outputs,labels.long())#calculate loss
             losses.append(loss.item()) #call .item() to get the value from a tensor. The tensor can reside in gpu but item() will still work
             outputs = outputs.data.cpu().numpy()
             N, _, h, w = outputs.shape
@@ -136,7 +135,7 @@ def test():
             labels = labels.to(device) #transfer the labels to the same device as the model's
 
             outputs = fcn_model(inputs)
-            loss = criterion(outputs, labels.long())#calculate loss
+            loss = criterion(outputs, labels.long())+DiceLoss.forward(fcn_model,outputs,labels.long())#calculate loss
             
             losses.append(loss.item()) #call .item() to get the value from a tensor. The tensor can reside in gpu but item() will still work
             outputs = outputs.data.cpu().numpy()
@@ -152,6 +151,22 @@ def test():
     fcn_model.train() #DONT FORGET TO TURN THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!    
     return np.mean(losses), np.mean(mean_iou_scores), np.mean(accuracy)
 
+class WCE ( nn.Module):
+    def __init__(self, weight=None, size_average=True):
+        super(WCE, self).__init__()
+
+    def forward(self, inputs, targets, beta=0.99):
+        inputs = inputs.data.cpu()
+#         N, _, h, w = inputs.shape
+#         inputs = inputs.transpose(0, 2, 3, 1).reshape(-1, n_class).argmax(axis=1).reshape(N, h, w)
+        inputs = torch.Tensor(inputs)
+        
+        weight_a = beta * tf.cast(targets, tf.float32)
+        weight_b = 1 - tf.cast(inputs, tf.float32)
+
+        o = (tf.math.log1p(tf.exp(-tf.abs(y_pred))) + tf.nn.relu(-y_pred)) * (weight_a + weight_b) + y_pred * weight_b 
+        return tf.reduce_mean(o)
+
 
 
 class DiceLoss(nn.Module):
@@ -163,7 +178,7 @@ class DiceLoss(nn.Module):
         smooth = 1
         inputs = inputs.data.cpu().numpy()
         N, _, h, w = inputs.shape
-        inputs = inputs.transpose(0, 2, 3, 1).reshape(-1, n_class).argmax(axis=1).reshape(N, h, w)
+        inputs = inputs.transpose(0, 2, 3, 1).reshape(-1, 10).argmax(axis=1).reshape(N, h, w)
         inputs = torch.from_numpy(inputs)
         
         inputs = inputs.to(device) #transfer the input to the same device as the model's
@@ -171,8 +186,8 @@ class DiceLoss(nn.Module):
         
         inputs = inputs.view(-1)
         targets = targets.view(-1)
-        intersection = ((inputs == targets) & (targets != 9)).sum()
-        total   = (targets != 9).sum() + (inputs != 9).sum() 
+        intersection = ((inputs == targets)).sum()
+        total   = (targets==targets).sum() 
         dice = (2.*intersection + smooth)/(total + smooth)  
         
         return 1 - dice
@@ -197,7 +212,7 @@ if __name__ == "__main__":
     
     epochs = 100
     criterion = nn.CrossEntropyLoss() 
-#     criterion = DiceLoss()
+#     criterion = WCE()
     # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
    
     n_class = 10
@@ -206,21 +221,16 @@ if __name__ == "__main__":
 #     pretrained_model = models.resnet34(pretrained=True)
 #     for param in pretrained_model.parameters():
 #         param.requires_grad = False
-  
 #     num_ftrs =  pretrained_model.fc.in_features
-#     print("num of features ----------->", num_ftrs)
-    
-#     pretrained_model.fc = nn.Linear(num_ftrs, 512)
-    
-#     pretrained_model.fc = nn.Sequential(*list(pretrained_model.fc.children())[:-1])
-#     print(pretrained_model)
-#     fcn_model = FCN_TL(n_class=n_class,pretrained=pretrained_model)
+#     pretrained_model = nn.Sequential(*list(pretrained_model.children())[:-2])
 
+#     fcn_model = FCN_TL(n_class=n_class,pretrained=pretrained_model)
     fcn_model = FCN(n_class=n_class)
+
     fcn_model.apply(init_weights)
     
 #     optimizer = optim.Adam(fcn_model.parameters(), lr=0.00005)
-    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
+    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.0005, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
     #optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
   
     fcn_model = fcn_model.to(device) #transfer the model to the device
