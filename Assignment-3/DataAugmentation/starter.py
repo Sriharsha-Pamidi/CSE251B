@@ -51,9 +51,9 @@ def train():
         train_metric['train_loss'].append(loss.item())
 
         val_loss , current_miou_score, current_accuracy = val(epoch)
-        train_metric['valid_loss'] = val_loss
-        train_metric['Accuracy'] = current_accuracy
-        train_metric['IOU_score']=  current_miou_score
+        train_metric['valid_loss'].append(val_loss)
+        train_metric['Accuracy'].append(current_accuracy)
+        train_metric['IOU_score'].append(current_miou_score)
         print(f"\n\n")
     
         if current_miou_score > best_iou_score:
@@ -63,7 +63,7 @@ def train():
         else:
             early_stop_count += 1
             
-        if early_stop_count >= 3:
+        if early_stop_count >= 5:
             #save the best model
             torch.save(fcn_model, "Models/model_adam_0p0005.pt")
             break
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     n_class = 10
     fcn_model = FCN(n_class=n_class)
     fcn_model.apply(init_weights)
-    optimizer = optim.Adam(fcn_model.parameters(), lr=0.0005)
+    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.1, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
 #     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
     #
     fcn_model = fcn_model.to(device) #transfer the model to the device

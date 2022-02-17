@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
 from torchvision import transforms
-
+from torchvision.transforms import functional
 
 import random
 import os
@@ -108,6 +108,10 @@ class TASDataset(Dataset):
         
         if self.transform:
             image = self.transform(image).float()
-            image = self.transformers[torch.randint(0,1)[0]](image).float()
+            t_var = random.randint(0,1)
+#             tilt_angle = random.randint(-10,10)
+#             image = functional.rotate(image,tilt_angle)
+#             mask = functional.rotate(mask,tilt_angle)
+#             print("yes augmented data")
 
         return image, mask
