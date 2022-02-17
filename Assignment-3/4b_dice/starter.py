@@ -40,7 +40,7 @@ def train():
             #we will not need to transfer the output, it will be automatically in the same device as the model's!
             loss = criterion(outputs, labels.long()) \
                         + dice_loss(F.softmax(outputs, dim=1).float(),
-                      F.one_hot(labels, fcn_model.n_classes).permute(0, 3, 1, 2).float(),
+                      F.one_hot(labels.to(torch.int64), fcn_model.n_class).permute(0, 3, 1, 2).float(),
                       multiclass=True)
             #calculate loss
             
@@ -99,7 +99,7 @@ def val(epoch):
             outputs = fcn_model(inputs)
             loss = criterion(outputs, labels.long()) \
                         + dice_loss(F.softmax(outputs, dim=1).float(),
-                      F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                      F.one_hot(labels.to(torch.int64), fcn_model.n_class).permute(0, 3, 1, 2).float(),
                       multiclass=True)
             losses.append(loss.item()) #call .item() to get the value from a tensor. The tensor can reside in gpu but item() will still work
             outputs = outputs.data.cpu().numpy()
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     # fcn_model = unet_model.UNet(n_channels=3, n_classes=n_class)
     fcn_model = FCN(n_class=n_class)
     fcn_model.apply(init_weights)
-    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
+    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
     #
     fcn_model = fcn_model.to(device) #transfer the model to the device
     
