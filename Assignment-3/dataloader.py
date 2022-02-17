@@ -48,12 +48,6 @@ class TASDataset(Dataset):
         self.width = 768
         self.height = 384
 
-        self.transformers = [torchvision.transforms.RandomHorizontalFlip(p=0.5),
-                             torchvision.transforms.RandomRotation((-5,5))
-                             # ,transforms.Compose(torchvision.transforms.RandomCrop((700,300)),
-                             # torchvision.transforms.Resize((self.width,self.height)))
-                             ]
-        
         self.color2class = {
                 #terrain
                 (192,192,192): 0, (105,105,105): 0, (160, 82, 45):0, (244,164, 96): 0, \
@@ -110,6 +104,5 @@ class TASDataset(Dataset):
         
         if self.transform:
             image = self.transform(image).float()
-            image = self.transformers[torch.randint(0,1)[0]](image).float()
 
         return image, mask
