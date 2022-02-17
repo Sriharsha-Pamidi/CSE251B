@@ -44,7 +44,7 @@ def train():
             # update the weights
             optimizer.step()
 
-            if iter % 10 == 0:
+            if iter % 20 == 0:
                 print("epoch{}, iter{}, loss: {}".format(epoch, iter, loss.item()))
         
         print("Finish epoch {}, time elapsed {}".format(epoch, time.time() - ts))
@@ -64,7 +64,7 @@ def train():
         else:
             early_stop_count += 1
             
-        if early_stop_count >= -1:
+        if early_stop_count >= 5:
             #save the best model
             torch.save(fcn_model, "Models/model_adam_0p0005.pth")
             break
@@ -159,7 +159,7 @@ train_dataset = TASDataset('../tas500v1.1')
 val_dataset = TASDataset('../tas500v1.1', eval=True, mode='val')
 test_dataset = TASDataset('../tas500v1.1', eval=True, mode='test')
 
-batchsize = 8
+batchsize = 2
 
 train_loader = DataLoader(dataset=train_dataset, batch_size= batchsize, shuffle=True)
 val_loader = DataLoader(dataset=val_dataset, batch_size= batchsize, shuffle=False)
