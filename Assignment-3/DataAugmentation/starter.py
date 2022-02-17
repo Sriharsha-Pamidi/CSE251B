@@ -179,9 +179,11 @@ if __name__ == "__main__":
     epochs = 100
     criterion = nn.CrossEntropyLoss()  # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
     n_class = 10
-    image, mask = train_loader.next()
-    plt.imshow(image)
-    plt.imshow(mask)
+    image, mask = next(iter(train_loader))
+    print(image.shape)
+    plt.imshow(image[0][0].numpy())
+    plt.imshow(mask[0].numpy())
+    
     # fcn_model = FCN(n_class=n_class)
     # fcn_model.apply(init_weights)
     #
