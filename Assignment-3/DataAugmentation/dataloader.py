@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
+from torch import tensor
 from torchvision import transforms
-
+from torchvision.transforms import functional
 
 import random
 import os
@@ -44,6 +45,11 @@ class TASDataset(Dataset):
         self.transform = transforms.Compose([transforms.ToTensor(),
                                               transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
                                               ])
+        self.transform_mask = transforms.Compose([transforms.ToTensor(),
+                                              ])
+        self.transformers = [functional.rotate
+        
+        ]
         # we will use the following width and height to resize
         self.width = 768
         self.height = 384
@@ -104,5 +110,10 @@ class TASDataset(Dataset):
         
         if self.transform:
             image = self.transform(image).float()
+#             ang = random.randint(-10,10)
+#             image = self.transformers[0](image,ang)
+#             mask = self.transform_mask(mask)
+#             mask = self.transformers[0](mask,ang,fill=9)
+#             mask = mask.numpy().squeeze()
 
         return image, mask
