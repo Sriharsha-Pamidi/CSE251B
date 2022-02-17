@@ -47,8 +47,8 @@ class TASDataset(Dataset):
                                               ])
         self.transform_mask = transforms.Compose([transforms.ToTensor(),
                                               ])
-        self.transformers = [functional.rotate
-        
+        self.transformers = [functional.rotate,
+                             transforms.RandomHorizontalFlip(p=1)
         ]
         # we will use the following width and height to resize
         self.width = 768
@@ -110,10 +110,18 @@ class TASDataset(Dataset):
         
         if self.transform:
             image = self.transform(image).float()
-#             ang = random.randint(-10,10)
-#             image = self.transformers[0](image,ang)
-#             mask = self.transform_mask(mask)
-#             mask = self.transformers[0](mask,ang,fill=9)
-#             mask = mask.numpy().squeeze()
+            t_var = random.randint(0,1)
+            if(False):
+                print("yes happening")
+                image = self.transformers[1](image)
+                mask = self.transform_mask(mask)
+                mask = self.transformers[1](mask)
+                mask = mask.numpy().squeeze()
+            else:
+                ang = random.randint(-10,10)
+                image = self.transformers[0](image,ang)
+                mask = self.transform_mask(mask)
+                mask = self.transformers[0](mask,ang,fill=9)
+                mask = mask.numpy().squeeze()
 
         return image, mask
