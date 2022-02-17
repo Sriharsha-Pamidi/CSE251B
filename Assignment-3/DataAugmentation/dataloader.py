@@ -34,11 +34,11 @@ def rgb2vals(color, color2ind):
 
 
 class TASDataset(Dataset):
-    def __init__(self, data_folder, eval=False, mode=None):
+    def __init__(self, data_folder, eval=False, mode=None,augment=False):
         self.data_folder = data_folder
         self.eval = eval
         self.mode = mode
-
+        self.aug_flag = augment
         # You can use any valid transformations here
 
         # The following transformation normalizes each channel using the mean and std provided
@@ -111,17 +111,18 @@ class TASDataset(Dataset):
         if self.transform:
             image = self.transform(image).float()
             t_var = random.randint(0,1)
-            if(False):
-                print("yes happening")
-                image = self.transformers[1](image)
-                mask = self.transform_mask(mask)
-                mask = self.transformers[1](mask)
-                mask = mask.numpy().squeeze()
-            else:
-                ang = random.randint(-10,10)
-                image = self.transformers[0](image,ang)
-                mask = self.transform_mask(mask)
-                mask = self.transformers[0](mask,ang,fill=9)
-                mask = mask.numpy().squeeze()
+            if(self.aug_flag):
+                if(False):
+                    print("yes happening")
+                    image = self.transformers[1](image)
+                    mask = self.transform_mask(mask)
+                    mask = self.transformers[1](mask)
+                    mask = mask.numpy().squeeze()
+                else:
+                    ang = random.randint(-10,10)
+                    image = self.transformers[0](image,ang)
+                    mask = self.transform_mask(mask)
+                    mask = self.transformers[0](mask,ang,fill=9)
+                    mask = mask.numpy().squeeze()
 
         return image, mask

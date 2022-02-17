@@ -162,9 +162,9 @@ device = torch.device('cuda') # determine which device to use (gpu or cpu)
 use_gpu = torch.cuda.is_available()
 print("gpu availability ----------------->" , use_gpu)
 
-train_dataset = TASDataset('../tas500v1.1')
-val_dataset = TASDataset('../tas500v1.1', eval=True, mode='val')
-test_dataset = TASDataset('../tas500v1.1', eval=True, mode='test')
+train_dataset = TASDataset('../tas500v1.1',augment=True)
+val_dataset = TASDataset('../tas500v1.1', eval=True, mode='val',augment=True)
+test_dataset = TASDataset('../tas500v1.1', eval=True, mode='test',augment=False)
 
 batchsize = 16
 
@@ -183,7 +183,7 @@ if __name__ == "__main__":
     fcn_model = FCN(n_class=n_class)
     fcn_model.apply(init_weights)
     
-    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.0005, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
+    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.00005, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
     #
     fcn_model = fcn_model.to(device) #transfer the model to the device
     
