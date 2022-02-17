@@ -51,9 +51,9 @@ def train():
         train_metric['train_loss'].append(loss.item())
 
         val_loss , current_miou_score, current_accuracy = val(epoch)
-        train_metric['valid_loss'] = val_loss
-        train_metric['Accuracy'] = current_accuracy
-        train_metric['IOU_score']=  current_miou_score
+        train_metric['valid_loss'].append(val_loss)
+        train_metric['Accuracy'].append(current_accuracy)
+        train_metric['IOU_score'].append(current_miou_score)
         print(f"\n\n")
     
         if current_miou_score > best_iou_score:
@@ -63,7 +63,7 @@ def train():
         else:
             early_stop_count += 1
             
-        if early_stop_count >= 3:
+        if early_stop_count >= 5:
             #save the best model
             torch.save(fcn_model, "Models/model_adam_0p0005.pt")
             break
@@ -158,11 +158,11 @@ train_dataset = TASDataset('tas500v1.1')
 val_dataset = TASDataset('tas500v1.1', eval=True, mode='val')
 test_dataset = TASDataset('tas500v1.1', eval=True, mode='test')
 
-bs = 16
+batchsize = 8
 
-train_loader = DataLoader(dataset=train_dataset, batch_size= bs, shuffle=True)
-val_loader = DataLoader(dataset=val_dataset, batch_size= bs, shuffle=False)
-test_loader = DataLoader(dataset=test_dataset, batch_size= bs, shuffle=False)
+train_loader = DataLoader(dataset=train_dataset, batch_size= batchsize, shuffle=True)
+val_loader = DataLoader(dataset=val_dataset, batch_size= batchsize, shuffle=False)
+test_loader = DataLoader(dataset=test_dataset, batch_size= batchsize, shuffle=False)
 
 
 
@@ -173,9 +173,11 @@ if __name__ == "__main__":
     n_class = 10
     fcn_model = FCN(n_class=n_class)
     fcn_model.apply(init_weights)
-    optimizer = optim.Adam(fcn_model.parameters(), lr=0.0005)
-#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
-    #
+    
+#     optimizer = optim.Adam(fcn_model.parameters(), lr=0.00005)
+    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.1, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
+    #optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
+  
     fcn_model = fcn_model.to(device) #transfer the model to the device
     
     val(0)  # show the accuracy before training
