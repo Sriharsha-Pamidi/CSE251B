@@ -47,8 +47,8 @@ class TASDataset(Dataset):
         # we will use the following width and height to resize
         self.width = 768
         self.height = 384
-        self.transformers = [torchvision.transforms.RandomHorizontalFlip(p=0.5),
-                             torchvision.transforms.RandomRotation((-5,5))
+        self.transformers = [transforms.RandomHorizontalFlip(p=0.5),
+                             transforms.RandomRotation((-5,5))
                              # ,transforms.Compose(torchvision.transforms.RandomCrop((700,300)),
                              # torchvision.transforms.Resize((self.width,self.height)))
                              ]
