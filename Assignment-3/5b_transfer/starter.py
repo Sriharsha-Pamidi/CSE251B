@@ -168,7 +168,7 @@ train_dataset = TASDataset('../tas500v1.1')
 val_dataset = TASDataset('../tas500v1.1', eval=True, mode='val')
 test_dataset = TASDataset('../tas500v1.1', eval=True, mode='test')
 
-batchsize = 8
+batchsize = 16
 
 train_loader = DataLoader(dataset=train_dataset, batch_size= batchsize, shuffle=True)
 val_loader = DataLoader(dataset=val_dataset, batch_size= batchsize, shuffle=False)
@@ -184,31 +184,31 @@ if __name__ == "__main__":
    
     n_class = 10
     
-#    ####code for pretraining - Start resnet 34
-#     pretrained_model = models.resnet34(pretrained=True)
-#     for param in pretrained_model.parameters():
-#         param.requires_grad = False
-#     num_ftrs =  pretrained_model.fc.in_features
-#     pretrained_model = nn.Sequential(*list(pretrained_model.children())[:-2])
-
-#     fcn_model = FCN_TL(n_class=n_class,pretrained=pretrained_model)
-#     ####code for pretraining - End
-    
-    
-    ####code for pretraining - Start vgg 16
-    pretrained_model = models.vgg16(pretrained=True)
+   ####code for pretraining - Start resnet 34
+    pretrained_model = models.resnet34(pretrained=True)
     for param in pretrained_model.parameters():
         param.requires_grad = False
     num_ftrs =  pretrained_model.fc.in_features
-    pretrained_model = nn.Sequential(*list(pretrained_model.children())[:-4])
+    pretrained_model = nn.Sequential(*list(pretrained_model.children())[:-2])
 
     fcn_model = FCN_TL(n_class=n_class,pretrained=pretrained_model)
+    ####code for pretraining - End
+    
+    
+    ####code for pretraining - Start vgg 16
+#     pretrained_model = models.resnet152(pretrained=True)
+#     for param in pretrained_model.parameters():
+#         param.requires_grad = False
+#     num_ftrs =  pretrained_model.fc.in_features
+#     pretrained_model = nn.Sequential(*list(pretrained_model.children())[:-4])
+
+#     fcn_model = FCN_TL(n_class=n_class,pretrained=pretrained_model)
     ####code for pretraining - End
 #     fcn_model = FCN(n_class=n_class)
 #     fcn_model.apply(init_weights)
     
 #     optimizer = optim.Adam(fcn_model.parameters(), lr=0.00005)
-    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
+    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.0005, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
     #optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
   
     fcn_model = fcn_model.to(device) #transfer the model to the device
