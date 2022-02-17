@@ -36,7 +36,7 @@ def train():
             outputs = fcn_model(inputs)
             #we will not need to transfer the output, it will be automatically in the same device as the model's!
             loss = criterion(outputs, labels.long())#calculate loss
-            loss.requires_grad = True
+#             loss.requires_grad = True
             # backpropagate
             loss.backward()
 
@@ -196,8 +196,8 @@ test_loader = DataLoader(dataset=test_dataset, batch_size= batchsize, shuffle=Fa
 if __name__ == "__main__":
     
     epochs = 100
-#     criterion = nn.CrossEntropyLoss() 
-    criterion = DiceLoss()
+    criterion = nn.CrossEntropyLoss() 
+#     criterion = DiceLoss()
     # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
    
     n_class = 10
@@ -220,7 +220,7 @@ if __name__ == "__main__":
     fcn_model.apply(init_weights)
     
 #     optimizer = optim.Adam(fcn_model.parameters(), lr=0.00005)
-    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.1, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
+    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
     #optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
   
     fcn_model = fcn_model.to(device) #transfer the model to the device
