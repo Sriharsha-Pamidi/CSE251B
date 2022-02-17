@@ -9,6 +9,7 @@ import gc
 import copy
 from matplotlib import pyplot as plt
 import time
+import unet_model
 
 # TODO: Some missing values are represented by '__'. You need to fill these up.
 
@@ -158,7 +159,7 @@ train_dataset = TASDataset('../tas500v1.1')
 val_dataset = TASDataset('../tas500v1.1', eval=True, mode='val')
 test_dataset = TASDataset('../tas500v1.1', eval=True, mode='test')
 
-batchsize = 16
+batchsize = 4
 
 train_loader = DataLoader(dataset=train_dataset, batch_size= batchsize, shuffle=True)
 val_loader = DataLoader(dataset=val_dataset, batch_size= batchsize, shuffle=False)
@@ -171,8 +172,8 @@ if __name__ == "__main__":
     epochs = 100
     criterion = nn.CrossEntropyLoss()  # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
     n_class = 10
-    fcn_model = FCN(n_class=n_class)
-    fcn_model.apply(init_weights)
+    fcn_model = unet_model.UNet(n_channels=3, n_classes=n_class)
+#     fcn_model.apply(init_weights)
     optimizer = optim.AdamW(fcn_model.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
     #
     fcn_model = fcn_model.to(device) #transfer the model to the device
