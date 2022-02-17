@@ -64,7 +64,7 @@ def train():
         else:
             early_stop_count += 1
             
-        if early_stop_count >= 5:
+        if early_stop_count >= -1:
             #save the best model
             torch.save(fcn_model, "Models/model_adam_0p0005.pth")
             break
@@ -159,7 +159,7 @@ train_dataset = TASDataset('../tas500v1.1')
 val_dataset = TASDataset('../tas500v1.1', eval=True, mode='val')
 test_dataset = TASDataset('../tas500v1.1', eval=True, mode='test')
 
-batchsize = 4
+batchsize = 8
 
 train_loader = DataLoader(dataset=train_dataset, batch_size= batchsize, shuffle=True)
 val_loader = DataLoader(dataset=val_dataset, batch_size= batchsize, shuffle=False)
