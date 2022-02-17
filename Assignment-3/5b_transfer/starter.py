@@ -13,7 +13,10 @@ import tensorflow as tf
 # TODO: Some missing values are represented by '__'. You need to fill these up.
 
 def init_weights(m):
-    if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+    print("hey")
+    if  isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
+    #     if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+        print("hey")
         torch.nn.init.xavier_uniform_(m.weight.data)
         torch.nn.init.normal_(m.bias.data) #xavier not applicable for biases
 
@@ -161,9 +164,9 @@ device = torch.device('cuda') # determine which device to use (gpu or cpu)
 use_gpu = torch.cuda.is_available()
 print("gpu availability ----------------->" , use_gpu)
 
-train_dataset = TASDataset('tas500v1.1') 
-val_dataset = TASDataset('tas500v1.1', eval=True, mode='val')
-test_dataset = TASDataset('tas500v1.1', eval=True, mode='test')
+train_dataset = TASDataset('../tas500v1.1') 
+val_dataset = TASDataset('../tas500v1.1', eval=True, mode='val')
+test_dataset = TASDataset('../tas500v1.1', eval=True, mode='test')
 
 batchsize = 8
 
@@ -181,18 +184,28 @@ if __name__ == "__main__":
    
     n_class = 10
     
-   ####code for pretraining - Start
-    pretrained_model = models.resnet34(pretrained=True)
+#    ####code for pretraining - Start resnet 34
+#     pretrained_model = models.resnet34(pretrained=True)
+#     for param in pretrained_model.parameters():
+#         param.requires_grad = False
+#     num_ftrs =  pretrained_model.fc.in_features
+#     pretrained_model = nn.Sequential(*list(pretrained_model.children())[:-2])
+
+#     fcn_model = FCN_TL(n_class=n_class,pretrained=pretrained_model)
+#     ####code for pretraining - End
+    
+    
+    ####code for pretraining - Start vgg 16
+    pretrained_model = models.vgg16(pretrained=True)
     for param in pretrained_model.parameters():
         param.requires_grad = False
     num_ftrs =  pretrained_model.fc.in_features
-    pretrained_model = nn.Sequential(*list(pretrained_model.children())[:-2])
+    pretrained_model = nn.Sequential(*list(pretrained_model.children())[:-4])
 
     fcn_model = FCN_TL(n_class=n_class,pretrained=pretrained_model)
     ####code for pretraining - End
-    # fcn_model = FCN(n_class=n_class)
-
-    fcn_model.apply(init_weights)
+#     fcn_model = FCN(n_class=n_class)
+#     fcn_model.apply(init_weights)
     
 #     optimizer = optim.Adam(fcn_model.parameters(), lr=0.00005)
     optimizer = optim.AdamW(fcn_model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
