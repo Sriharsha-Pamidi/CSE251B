@@ -44,6 +44,9 @@ class TASDataset(Dataset):
         self.transform = transforms.Compose([transforms.ToTensor(),
                                               transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
                                               ])
+        self.transformers = [transforms.Rotate()
+        
+        ]
         # we will use the following width and height to resize
         self.width = 768
         self.height = 384
@@ -104,5 +107,6 @@ class TASDataset(Dataset):
         
         if self.transform:
             image = self.transform(image).float()
+            image = self.transformers[0](10,image)
 
         return image, mask

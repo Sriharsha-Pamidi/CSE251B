@@ -179,31 +179,35 @@ if __name__ == "__main__":
     epochs = 100
     criterion = nn.CrossEntropyLoss()  # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
     n_class = 10
-    fcn_model = unet_model.UNet(n_channels=3, n_classes=n_class)
-#     fcn_model.apply(init_weights)
-    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
+    image, mask = train_loader.next()
+    plt.imshow(image)
+    plt.imshow(mask)
+    # fcn_model = FCN(n_class=n_class)
+    # fcn_model.apply(init_weights)
     #
-    fcn_model = fcn_model.to(device) #transfer the model to the device
-    
-    val(0)  # show the accuracy before training
-    train_metrics = train()
-    _ ,test_miou_score, test_accuracy = test()
-    print(f"Test Accuracy = ", test_accuracy)
-    print(f"Test IOU score = ", test_miou_score)
-    
-    plt.rcParams.update({'font.size': 30})
-    plt.figure(1)
-    fig = plt.figure(figsize=(15,15))
-    plt.plot(train_metrics['epochs'], train_metrics['train_loss'], label='train')
-    plt.plot(train_metrics['epochs'], train_metrics['valid_loss'], label='validation')
-    plt.xlabel('NUM OF EPOCHS')
-    plt.ylabel('LOSS')
-    plt.title("Loss Vs num of Epochs")
-    plt.legend()
-    plt.show()
-    fig.savefig('Images/Loss_plot '+str(round(time.time()%10000))+".jpg", bbox_inches='tight', dpi=150)
-    
- 
-    # housekeeping
-    gc.collect()
-    torch.cuda.empty_cache()
+    # optimizer = optim.AdamW(fcn_model.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
+    # #
+    # fcn_model = fcn_model.to(device) #transfer the model to the device
+    #
+    # val(0)  # show the accuracy before training
+    # train_metrics = train()
+    # _ ,test_miou_score, test_accuracy = test()
+    # print(f"Test Accuracy = ", test_accuracy)
+    # print(f"Test IOU score = ", test_miou_score)
+    #
+    # plt.rcParams.update({'font.size': 30})
+    # plt.figure(1)
+    # fig = plt.figure(figsize=(15,15))
+    # plt.plot(train_metrics['epochs'], train_metrics['train_loss'], label='train')
+    # plt.plot(train_metrics['epochs'], train_metrics['valid_loss'], label='validation')
+    # plt.xlabel('NUM OF EPOCHS')
+    # plt.ylabel('LOSS')
+    # plt.title("Loss Vs num of Epochs")
+    # plt.legend()
+    # plt.show()
+    # fig.savefig('Images/Loss_plot '+str(round(time.time()%10000))+".jpg", bbox_inches='tight', dpi=150)
+    #
+    #
+    # # housekeeping
+    # gc.collect()
+    # torch.cuda.empty_cache()
