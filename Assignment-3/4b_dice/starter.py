@@ -10,6 +10,7 @@ import copy
 from matplotlib import pyplot as plt
 import time
 import unet_model
+from dice_score import *
 
 # TODO: Some missing values are represented by '__'. You need to fill these up.
 
@@ -36,7 +37,11 @@ def train():
 
             outputs = fcn_model(inputs) 
             #we will not need to transfer the output, it will be automatically in the same device as the model's!
-            loss = criterion(outputs, labels.long())#calculate loss
+            loss = criterion(outputs, labels.long()) \
+                        + dice_loss(F.softmax(outputs, dim=1).float(),
+                      F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                      multiclass=True)
+            #calculate loss
             
             # backpropagate
             loss.backward()
@@ -66,7 +71,7 @@ def train():
             
         if early_stop_count >= 5:
             #save the best model
-            torch.save(fcn_model, "Models/model_adam_0p0005.pth")
+            torch.save(fcn_model, "Models/model_adam_0p0005.pt")
             break
             
 
@@ -179,8 +184,9 @@ if __name__ == "__main__":
     epochs = 100
     criterion = nn.CrossEntropyLoss()  # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
     n_class = 10
-    fcn_model = unet_model.UNet(n_channels=3, n_classes=n_class)
-#     fcn_model.apply(init_weights)
+    # fcn_model = unet_model.UNet(n_channels=3, n_classes=n_class)
+    fcn_model = FCN(n_class=n_class)
+    fcn_model.apply(init_weights)
     optimizer = optim.AdamW(fcn_model.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
     #
     fcn_model = fcn_model.to(device) #transfer the model to the device

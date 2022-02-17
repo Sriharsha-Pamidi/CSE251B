@@ -66,7 +66,7 @@ def train():
             
         if early_stop_count >= 5:
             #save the best model
-            torch.save(fcn_model, "Models/model_adam_0p0005.pth")
+            torch.save(fcn_model, "Models/model_adam_0p0005.pt")
             break
             
 
