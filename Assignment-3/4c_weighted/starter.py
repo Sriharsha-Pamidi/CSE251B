@@ -121,7 +121,7 @@ def test():
     mean_iou_scores = []
     accuracy = []
 
-    temp = [(inputs,labels) for iter,(inputs, labels) in enumerate(val_loader)]
+    temp = [(inputs,labels) for iter,(inputs, labels) in enumerate(test_loader)]
     mask_1 = temp[0][1][0]
     image_1 = temp[0][0][0]
     print(mask_1.size())
@@ -172,18 +172,19 @@ train_loader = DataLoader(dataset=train_dataset, batch_size= batchsize, shuffle=
 val_loader = DataLoader(dataset=val_dataset, batch_size= batchsize, shuffle=False)
 test_loader = DataLoader(dataset=test_dataset, batch_size= batchsize, shuffle=False)
 
-
+weight = [5.619267031558232, 1.6314595460621488, 24.282622196538487, 111.31323298197633, 9.839417581170176, 145.51331363463643, 690.3667986912347, 6274.723404255319, 20.944380790300393, 934.7891223877117]
 
 if __name__ == "__main__":
     
     epochs = 100
-    criterion = nn.CrossEntropyLoss()  # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
+    class_weights = torch.FloatTensor(weight).cuda()
+    criterion = nn.CrossEntropyLoss(weight=class_weights)  # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
     n_class = 10
     
     fcn_model = FCN(n_class=n_class)
     fcn_model.apply(init_weights)
     
-    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.00005, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
+    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.001, amsgrad=False)#     optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
     #
     fcn_model = fcn_model.to(device) #transfer the model to the device
     
