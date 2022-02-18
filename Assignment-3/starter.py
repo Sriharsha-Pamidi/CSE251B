@@ -10,6 +10,7 @@ import copy
 from matplotlib import pyplot as plt
 import time
 import tensorflow as tf
+import math
 # TODO: Some missing values are represented by '__'. You need to fill these up.
 
 def init_weights(m):
@@ -31,10 +32,11 @@ def train():
             # # both inputs and labels have to reside in the same device as the model's
             inputs = inputs.to(device) #transfer the input to the same device as the model's
             labels = labels.to(device) #transfer the labels to the same device as the model's
-
+           
             outputs = fcn_model(inputs)
             #we will not need to transfer the output, it will be automatically in the same device as the model's!
-            loss = criterion(outputs, labels.long())+DiceLoss.forward(fcn_model,outputs,labels.long())#calculate loss
+#             loss = criterion(outputs, labels.long())+DiceLoss.forward(fcn_model,outputs,labels.long())#calculate loss
+            loss = criterion(outputs, labels.long())
 #             loss.requires_grad = True
             # backpropagate
             loss.backward()
@@ -88,7 +90,8 @@ def val(epoch):
             labels = labels.to(device) #transfer the labels to the same device as the model's
 
             outputs = fcn_model(inputs)
-            loss = criterion(outputs, labels.long())+DiceLoss.forward(fcn_model,outputs,labels.long())#calculate loss
+#             loss = criterion(outputs, labels.long())+DiceLoss.forward(fcn_model,outputs,labels.long())#calculate loss
+            loss = criterion(outputs, labels.long())
             losses.append(loss.item()) #call .item() to get the value from a tensor. The tensor can reside in gpu but item() will still work
             outputs = outputs.data.cpu().numpy()
             N, _, h, w = outputs.shape
@@ -156,16 +159,33 @@ class WCE ( nn.Module):
         super(WCE, self).__init__()
 
     def forward(self, inputs, targets, beta=0.99):
-        inputs = inputs.data.cpu()
-#         N, _, h, w = inputs.shape
-#         inputs = inputs.transpose(0, 2, 3, 1).reshape(-1, n_class).argmax(axis=1).reshape(N, h, w)
-        inputs = torch.Tensor(inputs)
-        
-        weight_a = beta * tf.cast(targets, tf.float32)
-        weight_b = 1 - tf.cast(inputs, tf.float32)
+        inputs = inputs.data.cpu().numpy()
+#         inputs = inputs.to(device) #transfer the input to the same device as the model's
 
-        o = (tf.math.log1p(tf.exp(-tf.abs(y_pred))) + tf.nn.relu(-y_pred)) * (weight_a + weight_b) + y_pred * weight_b 
-        return tf.reduce_mean(o)
+        N, _, h, w = inputs.shape
+        inputs = inputs.transpose(0, 2, 3, 1).reshape(-1, 10).argmax(axis=1).reshape(N, h, w)
+#         inputs = torch.Tensor(inputs)
+        inputs = torch.from_numpy(inputs)
+
+        inputs = inputs.to(device) #transfer the input to the same device as the model's
+        targets= targets.to(device) #transfer the labels to the same device as the model's
+
+        inputs = inputs.view(-1)
+        targets = targets.view(-1)
+        weight_a = beta * targets.float()
+        weight_b = 1 - inputs.float()
+        weight_a = weight_a.to(device)
+        weight_b = weight_b.to(device)
+        print(inputs.shape)
+        print(targets.shape)
+        print(weight_a.shape)
+        print(weight_b.shape)
+        
+#         o = (tf.math.log1p(tf.exp(-tf.abs(inputs))) + nn.relu(-inputs)) * (weight_a + weight_b) + inputs * weight_b 
+        a= tf.math.log1p(torch.exp(torch.abs(inputs.float())))+torch.relu(-inputs.float())
+        o = torch.matmul(a,(weight_a + weight_b)) 
+        o = o + torch.matmul(inputs.float(),weight_b) # +np.log1p(np.exp(np.abs(inputs.long())))
+        return tf.math.reduce_mean(o)
 
 
 
@@ -211,20 +231,12 @@ test_loader = DataLoader(dataset=test_dataset, batch_size= batchsize, shuffle=Fa
 if __name__ == "__main__":
     
     epochs = 100
-    criterion = nn.CrossEntropyLoss() 
-#     criterion = WCE()
+#     criterion = nn.CrossEntropyLoss() 
+    criterion = WCE()
     # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
    
     n_class = 10
     
-   
-#     pretrained_model = models.resnet34(pretrained=True)
-#     for param in pretrained_model.parameters():
-#         param.requires_grad = False
-#     num_ftrs =  pretrained_model.fc.in_features
-#     pretrained_model = nn.Sequential(*list(pretrained_model.children())[:-2])
-
-#     fcn_model = FCN_TL(n_class=n_class,pretrained=pretrained_model)
     fcn_model = FCN(n_class=n_class)
 
     fcn_model.apply(init_weights)
