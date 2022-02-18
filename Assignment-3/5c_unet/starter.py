@@ -9,6 +9,7 @@ import gc
 import copy
 from matplotlib import pyplot as plt
 import time
+import unet_model
 
 # TODO: Some missing values are represented by '__'. You need to fill these up.
 
@@ -121,7 +122,7 @@ def test():
     mean_iou_scores = []
     accuracy = []
 
-    temp = [(inputs,labels) for iter,(inputs, labels) in enumerate(val_loader)]
+    temp = [(inputs,labels) for iter,(inputs, labels) in enumerate(test_loader)]
     mask_1 = temp[0][1][0]
     image_1 = temp[0][0][0]
     print(mask_1.size())
@@ -162,11 +163,11 @@ device = torch.device('cuda') # determine which device to use (gpu or cpu)
 use_gpu = torch.cuda.is_available()
 print("gpu availability ----------------->" , use_gpu)
 
-train_dataset = TASDataset('tas500v1.1') 
-val_dataset = TASDataset('tas500v1.1', eval=True, mode='val')
-test_dataset = TASDataset('tas500v1.1', eval=True, mode='test')
+train_dataset = TASDataset('../tas500v1.1') 
+val_dataset = TASDataset('../tas500v1.1', eval=True, mode='val')
+test_dataset = TASDataset('../tas500v1.1', eval=True, mode='test')
 
-batchsize = 8
+batchsize = 4
 
 train_loader = DataLoader(dataset=train_dataset, batch_size= batchsize, shuffle=True)
 val_loader = DataLoader(dataset=val_dataset, batch_size= batchsize, shuffle=False)
