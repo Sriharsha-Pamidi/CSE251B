@@ -34,6 +34,7 @@ def train():
             labels = labels.to(device) #transfer the labels to the same device as the model's
 
             outputs = fcn_model(inputs) 
+            #print(labels.size())
             #we will not need to transfer the output, it will be automatically in the same device as the model's!
             loss = criterion(outputs, labels.long())#calculate loss
             
@@ -43,10 +44,9 @@ def train():
             # update the weights
             optimizer.step()
 
-            if iter % 10 == 0:
+            if iter % 20 == 0:
                 print("epoch{}, iter{}, loss: {}".format(epoch, iter, loss.item()))
         
-        print("Finish epoch {}, time elapsed {}".format(epoch, time.time() - ts))
         train_metric['epochs'].append(epoch + 1)
         train_metric['train_loss'].append(loss.item())
 
@@ -90,6 +90,7 @@ def val(epoch):
             labels = labels.to(device) #transfer the labels to the same device as the model's
 
             outputs = fcn_model(inputs)
+            #print(outputs.size())
         
             loss = criterion(outputs, labels.long())#calculate loss
             losses.append(loss.item()) #call .item() to get the value from a tensor. The tensor can reside in gpu but item() will still work
@@ -102,7 +103,14 @@ def val(epoch):
             mean_iou_scores.append(np.nanmean(iou(pred, labels, n_class)))  # Complete this function in the util, notice the use of np.nanmean() here
         
             accuracy.append(pixel_acc(pred, labels)) # Complete this function in the util
-    fcn_model.train() #DONT FORGET TO TURN THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!    
+            
+            
+    fcn_model.train() #DONT FORGET TO TURN THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!
+    
+    
+    print(" IOU === ", np.mean(mean_iou_scores))
+    print(" accuracy ===",np.mean(accuracy))
+    
     return np.mean(losses), np.mean(mean_iou_scores), np.mean(accuracy)
 
 def test():
@@ -169,13 +177,17 @@ test_loader = DataLoader(dataset=test_dataset, batch_size= batchsize, shuffle=Fa
 if __name__ == "__main__":
     
     epochs = 100
-    criterion = nn.CrossEntropyLoss()  # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
+    criterion = nn.CrossEntropyLoss() 
+    # Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
+   
     n_class = 10
+    
     fcn_model = FCN(n_class=n_class)
     fcn_model.apply(init_weights)
     
 #     optimizer = optim.Adam(fcn_model.parameters(), lr=0.00005)
-    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.1, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
+
+    optimizer = optim.AdamW(fcn_model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
     #optimizer = optim.SGD(fcn_model.parameters(), lr=0.005, momentum=0.9)  # choose an optimizer
   
     fcn_model = fcn_model.to(device) #transfer the model to the device
