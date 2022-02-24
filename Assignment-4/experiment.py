@@ -45,8 +45,8 @@ class Experiment(object):
         self.__model = get_model(config_data, self.__vocab)
 
         # TODO: Set these Criterion and Optimizers Correctly
-        self.__criterion = None
-        self.__optimizer = None
+        self.__criterion = torch.nn.CrossEntropyLoss()
+        self.__optimizer = torch.optim.AdamW(self.__model.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
 
         self.__init_model()
 
@@ -68,6 +68,7 @@ class Experiment(object):
 
         else:
             os.makedirs(self.__experiment_dir)
+            
 
     def __init_model(self):
         if torch.cuda.is_available():
@@ -86,26 +87,63 @@ class Experiment(object):
             self.__log_epoch_stats(start_time)
             self.__save_model()
 
+
     # TODO: Perform one training iteration on the whole dataset and return loss value
     def __train(self):
         self.__model.train()
         training_loss = 0
+        
+        device = torch.device('cuda') # determine which device to use (gpu or cpu)
+        use_gpu = torch.cuda.is_available()
+        print("gpu availability ----------------->" , use_gpu)
+
 
         for i, (images, captions, _) in enumerate(self.__train_loader):
-            raise NotImplementedError()
+#             reset optimizer gradients
+            self.__optimizer.zero_grad()
+    
+            # # both inputs and labels have to reside in the same device as the model's
+            images   = images.to(device) #transfer the input to the same device as the model's
+            captions = captions.to(device) #transfer the labels to the same device as the model's
 
-        return training_loss
+            output_captions = self.__model(images,captions) 
+            
+            #we will not need to transfer the output, it will be automatically in the same device as the model's!
+            loss = self.__criterion(output_captions, captions[0])#calculate loss
+            
+            # backpropagate
+            loss.backward()
+
+            # update the weights
+            self.__optimizer.step()
+            
+            if i%500 == 0 :
+                print("i{}, loss: {}".format(i, loss.item()))
+                start_time = datetime.now()
+                self.__record_stats(loss.item(),0)
+                self.__log_epoch_stats(start_time)
+                self.__save_model()
+
+            #raise NotImplementedError()
+
+        return loss.item()
 
     # TODO: Perform one Pass on the validation set and return loss value. You may also update your best model here.
     def __val(self):
         self.__model.eval()
         val_loss = 0
 
-        with torch.no_grad():
-            for i, (images, captions, _) in enumerate(self.__val_loader):
-                raise NotImplementedError()
+#         with torch.no_grad():
+#             for i, (images, captions, _) in enumerate(self.__val_loader):
+#     # # both inputs and labels have to reside in the same device as the model's
+#                 images   = images.to(device) #transfer the input to the same device as the model's
+#                 captions = captions.to(device) #transfer the labels to the same device as the model's
 
-        return val_loss
+#                 output_captions = self.__model(images,captions) 
+            
+#             #we will not need to transfer the output, it will be automatically in the same device as the model's!
+#                 val_loss = self.__criterion(output_captions, captions[0])#calculate loss            
+#         return val_loss.item()
 
     # TODO: Implement your test function here. Generate sample captions and evaluate loss and
     #  bleu scores using the best model. Use utility functions provided to you in caption_utils.
