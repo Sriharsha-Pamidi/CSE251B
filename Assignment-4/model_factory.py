@@ -8,6 +8,7 @@
 
 import torch
 import torch.nn as nn
+import gensim
 from torchvision import models
 
 def get_model(config_data, vocab):
@@ -80,9 +81,14 @@ class Decoder(nn.Module):
         self.deterministic  = config_data['generation']['deterministic']
         self.vocab_len      = vocab_len
 
-        self.embedding      = nn.Embedding(self.vocab_len, self.embedding_size)
+        # self.embedding      = nn.Embedding(self.vocab_len, self.embedding_size)
+        word_model = gensim.models.Word2Vec.load('./word2vec_pretrain_v300.model')
+        word_weights = torch.FloatTensor(word_model.wv.vectors)
         
-        #in baseline put no_layers=2
+        self.embedding = nn.Embedding.from_pretrained(word_weights)
+        self.embedding.requires_grad = False
+        
+        # in baseline put no_layers=2
         if self.model_type == 'LSTM':
             self.layer = nn.LSTM(self.embedding_size, self.hidden_size, self.num_layers, batch_first=True)
         elif self.model_type == 'RNN':
