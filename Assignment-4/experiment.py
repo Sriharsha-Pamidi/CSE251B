@@ -83,7 +83,6 @@ class Experiment(object):
             self.__current_epoch = epoch
             train_loss = self.__train()
             self.__save_model()
-
             val_loss = self.__val()
             self.__record_stats(train_loss, val_loss)
             self.__log_epoch_stats(start_time)
@@ -229,7 +228,7 @@ class Experiment(object):
                 bleu1_list.append(bleu1_value)
                 bleu4_list.append(bleu4_value)
                                          
-        result_str = "Val Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(np.mean(val_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
+        result_str = "Val Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(np.mean(val_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
         self.__log(result_str)
 
         return val_loss
@@ -314,7 +313,7 @@ class Experiment(object):
                 bleu1_list.append(bleu1_value)
                 bleu4_list.append(bleu4_value)
                                          
-        result_str = "Test Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(np.mean(test_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
+        result_str = "Test Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(np.mean(test_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
         self.__log(result_str)
 
         return test_loss
