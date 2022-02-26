@@ -3,10 +3,11 @@
 # Code snippet by Ajit Kumar, Savyasachi
 # Fall 2020
 ################################################################################
+import warnings
+warnings.filterwarnings("ignore")
 
 from experiment import Experiment
 import sys
-
 # Main Driver for your code. Either run `python main.py` which will run the experiment with default config
 # or specify the configuration by running `python main.py custom`
 if __name__ == "__main__":

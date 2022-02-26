@@ -32,11 +32,14 @@ class Img_Cap(nn.Module):
         self.encoder = ResNet50CNN(self.embedding_size)
         self.decoder = Decoder( config_data ,self.vocab_len)
 
+        for params in self.decoder.parameters():
+            params.requires_grad = True
+            
     def forward(self, images,captions,train=True):
         encoded_images = self.encoder(images)
-        output_captions = self.decoder(encoded_images,captions,train)
+        output_captions , output_captions_idx= self.decoder(encoded_images,captions,train)
         
-        return output_captions
+        return output_captions, output_captions_idx
             
         
 
@@ -45,25 +48,18 @@ class ResNet50CNN(nn.Module):
         super().__init__()
 
         self.embedding_size = embedding_size
-        
-        self.pretrained_model = models.resnet50(pretrained = True)
+        num_input_ftrs = models.resnet50(pretrained = True).fc.in_features
+        self.pretrained_model = nn.Sequential(*(list(models.resnet50(pretrained = True).children())[:-1]))
+        self.linear = nn.Linear(num_input_ftrs , self.embedding_size)
         
         for param in self.pretrained_model.parameters():
-            param.requires_grad = False
-            
-        self.num_input_ftrs = self.pretrained_model.fc.in_features
+            param.requires_grad = False        
         
-        self.pretrained_model = nn.Sequential(*list(self.pretrained_model.children())[:-1])
-       
-        self.linear = nn.Linear(self.num_input_ftrs , self.embedding_size)
-        #batch norm???
-        
-        
+        for param in self.linear.parameters():
+            param.requires_grad = True
     def forward(self,images):
         
-
         features = self.pretrained_model(images)
-        
         features = features.reshape(features.size(0),-1)
         encoded_image = self.linear(features)
         
@@ -102,11 +98,10 @@ class Decoder(nn.Module):
             embeddings      = torch.cat((encoded_images.unsqueeze(1), word_embeddings),1)
             hidden,_        = self.layer(embeddings)
             vocab_output    = self.linear(hidden[0]) 
-#             vocab_output_prob = nn.functional.softmax(vocab_output,dim=1)
-            vocab_output_prob = vocab_output
-            _, a = torch.max(nn.functional.softmax(vocab_output_prob,dim=1),1)
+            vocab_output_prob = nn.functional.softmax(vocab_output,dim=1)
+            _, a = torch.max(vocab_output_prob,1)
             sampled_index = a
-            return vocab_output_prob, sampled_index
+            return vocab_output, sampled_index
                             
         else :
             input_embedding = encoded_images.unsqueeze(1)
@@ -114,29 +109,25 @@ class Decoder(nn.Module):
             output_captions_idx=[]
             for i in range(self.max_length):
                 hidden,_         = self.layer(input_embedding)
-                output_embedding = self.linear(hidden[0]/self.temp)
-#                 output_prob      = nn.functional.softmax(output_embedding,dim=1)
-                output_prob = output_embedding
+                output_embedding = self.linear(hidden[0])
+                output_prob      = nn.functional.softmax((output_embedding)/(self.temp),dim=1)
                 output_prob.to("cuda")
                 
                 if self.deterministic == True :
-                    _, a = torch.max(nn.functional.softmax(output_prob,dim=1),1)
+                    _, a = torch.max(output_prob,1)
                     sampled_index = a
                     input_embedding = self.embedding(a).unsqueeze(1)
                     
                 else :
-                    sampled_index = list(torch.utils.data.WeightedRandomSampler(nn.functional.softmax(output_prob,dim=1),1))
-                
+                    sampled_index = list(torch.utils.data.WeightedRandomSampler(output_prob,1))
                     sampled_index=torch.Tensor(sampled_index[0])
                     sampled_index=sampled_index.int()
                     sampled_index=sampled_index.cuda()
-                    input_embedding = self.embedding(sampled_index).unsqueeze(1)
+                    input_embedding = self.embedding(sampled_index).unsqueeze(1)                    
                     
-                    
-                output_captions.append(output_prob.tolist())
+                output_captions.append(output_embedding.tolist())
                 output_captions_idx.append(sampled_index)
-                if sampled_index == 2:
-                    break
+
                 
             return output_captions, output_captions_idx
        
