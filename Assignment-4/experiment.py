@@ -15,7 +15,8 @@ from constants import ROOT_STATS_DIR
 from dataset_factory import get_datasets
 from file_utils import *
 from model_factory import get_model
-
+import warnings
+warnings.filterwarnings("ignore")
 
 # Class to encapsulate a neural experiment.
 # The boilerplate code to setup the experiment, log stats, checkpoints and plotting have been provided to you.
@@ -82,11 +83,10 @@ class Experiment(object):
             start_time = datetime.now()
             self.__current_epoch = epoch
             train_loss = self.__train()
-            self.__save_model()
             val_loss = self.__val()
             self.__record_stats(train_loss, val_loss)
             self.__log_epoch_stats(start_time)
-
+            self.__save_model()
 
     # TODO: Perform one training iteration on the whole dataset and return loss value
     def __train(self):
@@ -146,7 +146,6 @@ class Experiment(object):
             self.__optimizer.step()
             
             #raise NotImplementedError()
-
         return loss.item()
 
     # TODO: Perform one Pass on the validation set and return loss value. You may also update your best model here.
@@ -163,14 +162,12 @@ class Experiment(object):
         bleu1_value = 0
         bleu4_value = 0
 
-       
         with torch.no_grad():
             for i, (images, captions, img_ids) in enumerate(self.__val_loader):
                 pred_captions  = []
                 label_captions = []      
                 images   = images.to(device)
                 captions = captions.to(device)
-                
                 
                 output_captions, output_captions_idx = self.__model(images,captions,train=False)     
                 for word in output_captions_idx:
@@ -180,7 +177,6 @@ class Experiment(object):
                         pred_captions.append(word_value)
                     elif word_value == "<end>" :
                         break
-                    
                 for sent in captions:
                     temp_sent = []
                     for word in sent:
@@ -190,10 +186,8 @@ class Experiment(object):
                             temp_sent.append(word_value)
                     label_captions.append(temp_sent)
                 
-            
                 output_captions = (torch.Tensor(output_captions)).to(device)
                 output_captions = output_captions.permute([1,0,2])[0]
-               
                 # Padding one hot 
                 X = nn.functional.one_hot(torch.tensor([0]),num_classes=len(self.__vocab))
                 Y = torch.tensor([0])
@@ -202,10 +196,8 @@ class Experiment(object):
                 else :
                     captions_new = captions[0]
                
-
                 Output = output_captions
                 Caption= captions_new
-                            
                 Output = Output.to(device)
                 Caption = Caption.to(device)
                 X = X.to(device)
@@ -218,20 +210,16 @@ class Experiment(object):
                     for i in range (output_captions.shape[0]-len(captions_new) ):
                         Caption = torch.cat((Caption,Y),0)
                   
-
                 val_loss       = self.__criterion(Output, Caption) #calculate loss   
-               
                 bleu1_value     = bleu1(label_captions, pred_captions)
                 bleu4_value     = bleu4(label_captions, pred_captions)
-                
                 val_loss_list.append(val_loss.item())
                 bleu1_list.append(bleu1_value)
                 bleu4_list.append(bleu4_value)
-                                         
         result_str = "Val Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(np.mean(val_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
         self.__log(result_str)
 
-        return val_loss
+        return np.mean(val_loss_list)
     # TODO: Implement your test function here. Generate sample captions and evaluate loss and
     #  bleu scores using the best model. Use utility functions provided to you in caption_utils.
     #  Note than you'll need image_ids and COCO object in this case to fetch all captions to generate bleu scores.
@@ -312,11 +300,10 @@ class Experiment(object):
                 test_loss_list.append(test_loss.item())
                 bleu1_list.append(bleu1_value)
                 bleu4_list.append(bleu4_value)
-                                         
         result_str = "Test Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(np.mean(test_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
         self.__log(result_str)
-
-        return test_loss
+            
+        return np.mean(test_loss_list)
 
     def __save_model(self):
         root_model_path = os.path.join(self.__experiment_dir, 'latest_model.pt')
@@ -353,8 +340,10 @@ class Experiment(object):
         e = len(self.__training_losses)
         x_axis = np.arange(1, e + 1, 1)
         plt.figure()
-        plt.plot(x_axis, self.__training_losses, label="Training Loss")
-        plt.plot(x_axis, self.__val_losses, label="Validation Loss")
+        training_losses = torch.tensor(self.__training_losses, device="cpu")
+        val_losses = torch.tensor(self.__val_losses, device="cpu")
+        plt.plot(x_axis, training_losses, label="Training Loss")
+        plt.plot(x_axis, val_losses, label="Validation Loss")
         plt.xlabel("Epochs")
         plt.legend(loc='best')
         plt.title(self.__name + " Stats Plot")
