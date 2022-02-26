@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from datetime import datetime
+import torch.nn as nn
 
 from caption_utils import *
 from constants import ROOT_STATS_DIR
@@ -46,7 +47,7 @@ class Experiment(object):
 
         # TODO: Set these Criterion and Optimizers Correctly
         self.__criterion = torch.nn.CrossEntropyLoss()
-        self.__optimizer = torch.optim.AdamW(self.__model.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
+        self.__optimizer = torch.optim.AdamW(self.__model.parameters(), lr=config_data["experiment"]["learning_rate"], betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
 
         self.__init_model()
 
@@ -61,7 +62,6 @@ class Experiment(object):
             self.__training_losses = read_file_in_dir(self.__experiment_dir, 'training_losses.txt')
             self.__val_losses = read_file_in_dir(self.__experiment_dir, 'val_losses.txt')
             self.__current_epoch = len(self.__training_losses)
-
             state_dict = torch.load(os.path.join(self.__experiment_dir, 'latest_model.pt'))
             self.__model.load_state_dict(state_dict['model'])
             self.__optimizer.load_state_dict(state_dict['optimizer'])
@@ -82,17 +82,18 @@ class Experiment(object):
             start_time = datetime.now()
             self.__current_epoch = epoch
             train_loss = self.__train()
+            self.__save_model()
+
             val_loss = self.__val()
             self.__record_stats(train_loss, val_loss)
             self.__log_epoch_stats(start_time)
-            self.__save_model()
 
 
     # TODO: Perform one training iteration on the whole dataset and return loss value
     def __train(self):
         self.__model.train()
         training_loss = 0
-        
+      
         device = torch.device('cuda') # determine which device to use (gpu or cpu)
         use_gpu = torch.cuda.is_available()
         print("gpu availability ----------------->" , use_gpu)
@@ -101,29 +102,50 @@ class Experiment(object):
         for i, (images, captions, _) in enumerate(self.__train_loader):
 #             reset optimizer gradients
             self.__optimizer.zero_grad()
-    
+            pred_captions  = []
+            label_captions = []
+       
             # # both inputs and labels have to reside in the same device as the model's
             images   = images.to(device) #transfer the input to the same device as the model's
             captions = captions.to(device) #transfer the labels to the same device as the model's
+            self.__model.to(device)
+            output_captions, output_captions_idx = self.__model(images,captions,train=True) 
+            for word in output_captions_idx:
+                    a = word.item()
+                    word_value = self.__vocab.idx2word[a]
+                    pred_captions.append(word_value)
 
-            output_captions = self.__model(images,captions) 
-            
+            for sent in captions:
+                temp_sent = []
+                for word in sent:
+                    a = word.item()
+                    word_value = self.__vocab.idx2word[a]
+                    temp_sent.append(word_value)
+                label_captions.append(temp_sent)
+
+                
+                
+            captions_new = []
+#             captions_new.append(self.__vocab.word2idx["<pad>"] )
+            captions_new.extend(captions[0])
+            captions_new = torch.Tensor(captions_new)
+            captions_new = captions_new.to(device)
+            output_captions=output_captions.to(device)
             #we will not need to transfer the output, it will be automatically in the same device as the model's!
-            loss = self.__criterion(output_captions, captions[0])#calculate loss
+            loss = self.__criterion(output_captions, captions_new.long())#calculate loss
             
+            if i%10000 == 0 :
+                print("label ---->", label_captions)
+                print("\n out ---->",pred_captions)
+                
             # backpropagate
             loss.backward()
+            if i%10000 == 0 :            
+                print("i : {}, loss: {}".format(i, loss.item()))
 
             # update the weights
             self.__optimizer.step()
             
-            if i%500 == 0 :
-                print("i{}, loss: {}".format(i, loss.item()))
-                start_time = datetime.now()
-                self.__record_stats(loss.item(),0)
-                self.__log_epoch_stats(start_time)
-                self.__save_model()
-
             #raise NotImplementedError()
 
         return loss.item()
@@ -132,38 +154,170 @@ class Experiment(object):
     def __val(self):
         self.__model.eval()
         val_loss = 0
+        device = torch.device('cuda') # determine which device to use (gpu or cpu)
+        use_gpu = torch.cuda.is_available()
+        self.__model.to(device)
+        
+        val_loss_list = []
+        bleu1_list = []
+        bleu4_list = []
+        bleu1_value = 0
+        bleu4_value = 0
 
-#         with torch.no_grad():
-#             for i, (images, captions, _) in enumerate(self.__val_loader):
-#     # # both inputs and labels have to reside in the same device as the model's
-#                 images   = images.to(device) #transfer the input to the same device as the model's
-#                 captions = captions.to(device) #transfer the labels to the same device as the model's
-
-#                 output_captions = self.__model(images,captions) 
+       
+        with torch.no_grad():
+            for i, (images, captions, img_ids) in enumerate(self.__val_loader):
+                pred_captions  = []
+                label_captions = []      
+                images   = images.to(device)
+                captions = captions.to(device)
+                
+                
+                output_captions, output_captions_idx = self.__model(images,captions,train=False)     
+                for word in output_captions_idx:
+                    a = word.item()
+                    word_value = self.__vocab.idx2word[a]
+                    if (word_value != "<start>") and (word_value != "<end>" ):
+                        pred_captions.append(word_value)
+                    elif word_value == "<end>" :
+                        break
+                    
+                for sent in captions:
+                    temp_sent = []
+                    for word in sent:
+                        a = word.item()
+                        word_value = self.__vocab.idx2word[a]
+                        if (word_value != "<start>") and (word_value != "<end>" ):
+                            temp_sent.append(word_value)
+                    label_captions.append(temp_sent)
+                
             
-#             #we will not need to transfer the output, it will be automatically in the same device as the model's!
-#                 val_loss = self.__criterion(output_captions, captions[0])#calculate loss            
-#         return val_loss.item()
+                output_captions = (torch.Tensor(output_captions)).to(device)
+                output_captions = output_captions.permute([1,0,2])[0]
+               
+                # Padding one hot 
+                X = nn.functional.one_hot(torch.tensor([0]),num_classes=len(self.__vocab))
+                Y = torch.tensor([0])
+                if len(captions[0]) >= 20:
+                    captions_new = captions[0][:20]
+                else :
+                    captions_new = captions[0]
+               
 
+                Output = output_captions
+                Caption= captions_new
+                            
+                Output = Output.to(device)
+                Caption = Caption.to(device)
+                X = X.to(device)
+                Y = Y.to(device)
+                if output_captions.shape[0] < len(captions_new):
+                    for i in range (len(captions_new) - output_captions.shape[0]):
+                        Output = torch.cat((Output,X),0)
+                        
+                elif len(captions_new) < output_captions.shape[0] :
+                    for i in range (output_captions.shape[0]-len(captions_new) ):
+                        Caption = torch.cat((Caption,Y),0)
+                  
+
+                val_loss       = self.__criterion(Output, Caption) #calculate loss   
+               
+                bleu1_value     = bleu1(label_captions, pred_captions)
+                bleu4_value     = bleu4(label_captions, pred_captions)
+                
+                val_loss_list.append(val_loss.item())
+                bleu1_list.append(bleu1_value)
+                bleu4_list.append(bleu4_value)
+                                         
+        result_str = "Val Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(np.mean(val_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
+        self.__log(result_str)
+
+        return val_loss
     # TODO: Implement your test function here. Generate sample captions and evaluate loss and
     #  bleu scores using the best model. Use utility functions provided to you in caption_utils.
     #  Note than you'll need image_ids and COCO object in this case to fetch all captions to generate bleu scores.
     def test(self):
         self.__model.eval()
         test_loss = 0
-        bleu1 = 0
-        bleu4 = 0
+        device = torch.device('cuda') # determine which device to use (gpu or cpu)
+        use_gpu = torch.cuda.is_available()
+        self.__model.to(device)
+        
+        test_loss_list = []
+        bleu1_list = []
+        bleu4_list = []
+        bleu1_value = 0
+        bleu4_value = 0
 
+       
         with torch.no_grad():
-            for iter, (images, captions, img_ids) in enumerate(self.__test_loader):
-                raise NotImplementedError()
+            for i, (images, captions, img_ids) in enumerate(self.__test_loader):
+                pred_captions  = []
+                label_captions = []      
+                images   = images.to(device)
+                captions = captions.to(device)
+                
+                
+                output_captions, output_captions_idx = self.__model(images,captions,train=False)     
+                for word in output_captions_idx:
+                    a = word.item()
+                    word_value = self.__vocab.idx2word[a]
+                    if (word_value != "<start>") and (word_value != "<end>" ):
+                        pred_captions.append(word_value)
+                    elif word_value == "<end>" :
+                        break
+                    
+                for sent in captions:
+                    temp_sent = []
+                    for word in sent:
+                        a = word.item()
+                        word_value = self.__vocab.idx2word[a]
+                        if (word_value != "<start>") and (word_value != "<end>" ):
+                            temp_sent.append(word_value)
+                    label_captions.append(temp_sent)
+                
+            
+                output_captions = (torch.Tensor(output_captions)).to(device)
+                output_captions = output_captions.permute([1,0,2])[0]
+               
+                # Padding one hot 
+                X = nn.functional.one_hot(torch.tensor([0]),num_classes=len(self.__vocab))
+                Y = torch.tensor([0])
+                if len(captions[0]) >= 20:
+                    captions_new = captions[0][:20]
+                else :
+                    captions_new = captions[0]
+               
 
-        result_str = "Test Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(test_loss,
-                                                                                               bleu1,
-                                                                                               bleu4)
+                Output = output_captions
+                Caption= captions_new
+                            
+                Output = Output.to(device)
+                Caption = Caption.to(device)
+                X = X.to(device)
+                Y = Y.to(device)
+                if output_captions.shape[0] < len(captions_new):
+                    for i in range (len(captions_new) - output_captions.shape[0]):
+                        Output = torch.cat((Output,X),0)
+                        
+                elif len(captions_new) < output_captions.shape[0] :
+                    for i in range (output_captions.shape[0]-len(captions_new) ):
+                        Caption = torch.cat((Caption,Y),0)
+                  
+
+                test_loss       = self.__criterion(Output, Caption) #calculate loss   
+                
+                bleu1_value     = bleu1(label_captions, pred_captions)
+                bleu4_value     = bleu4(label_captions, pred_captions)
+                
+                test_loss_list.append(test_loss.item())
+                bleu1_list.append(bleu1_value)
+                bleu4_list.append(bleu4_value)
+                                         
+        result_str = "Test Performance: Loss: {}, Perplexity: {}, Bleu1: {}, Bleu4: {}".format(np.mean(test_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
         self.__log(result_str)
 
-        return test_loss, bleu1, bleu4
+        return test_loss
 
     def __save_model(self):
         root_model_path = os.path.join(self.__experiment_dir, 'latest_model.pt')
