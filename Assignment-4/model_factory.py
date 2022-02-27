@@ -100,12 +100,12 @@ class Decoder(nn.Module):
     def forward(self, encoded_images, captions, train=True):
                        
         if train == True :
-            word_embeddings = self.embedding(captions[:,:-1])
+            word_embeddings = self.embedding(captions)
             embeddings      = torch.cat((encoded_images.unsqueeze(1), word_embeddings),1)
             hidden,_        = self.layer(embeddings)
-            vocab_output    = self.linear(hidden[0]) 
+            vocab_output    = self.linear(hidden) 
             vocab_output_prob = nn.functional.softmax(vocab_output,dim=1)
-            _, a = torch.max(vocab_output_prob,1)
+            _, a = torch.max(vocab_output_prob,2)
             sampled_index = a
             return vocab_output, sampled_index
                             
