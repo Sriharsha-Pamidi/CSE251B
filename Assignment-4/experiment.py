@@ -32,7 +32,7 @@ class Experiment(object):
 
         self.__name = config_data['experiment_name']
         self.__experiment_dir = os.path.join(ROOT_STATS_DIR, self.__name)
-
+        self.config_data = config_data
         # Load Datasets
         self.__coco_test, self.__vocab, self.__train_loader, self.__val_loader, self.__test_loader = get_datasets(
             config_data)
@@ -145,7 +145,7 @@ class Experiment(object):
                 print("******************************")
             # update the weights
             self.__optimizer.step()
-            
+#             break
             #raise NotImplementedError()
         return loss.item()
 
@@ -164,51 +164,44 @@ class Experiment(object):
         bleu4_value = 0
 
         with torch.no_grad():
-            for i, (images, captions, img_ids) in enumerate(self.__val_loader):
-                pred_captions  = []
-                label_captions = []      
-                images   = images.to(device)
-                captions = captions.to(device)
+            for i, (images1, captions1, lengths, img_ids) in enumerate(self.__val_loader):
+#                 print(captions1.shape)
+                images1   = images1.to(device)
+                captions1 = captions1.to(device)
                 
-                output_captions, output_captions_idx = self.__model(images,captions,train=False)     
-                output_captions_for_loss, output_captions_idx_for_loss = self.__model(images,captions,train=True)
+                output_captions, output_captions_idx = self.__model(images1,captions1,train=False)     
+                output_captions_for_loss, output_captions_idx_for_loss = self.__model(images1,captions1,train=True)
                 
-                for word in output_captions_idx:
-                    a = word.item()
-                    word_value = self.__vocab.idx2word[a]
-                    if (word_value != "<start>") and (word_value != "<end>" ):
-                        pred_captions.append(word_value)
-                    elif word_value == "<end>" :
-                        break
-                for sent in captions:
-                    temp_sent = []
-                    for word in sent:
+                packed_output_captions = pack_padded_sequence(output_captions_for_loss, lengths,batch_first = True)
+                packed_captions=pack_padded_sequence(captions1, lengths,batch_first = True)
+
+                val_loss       = self.__criterion(packed_output_captions.data, packed_captions.data) #calculate loss   
+                val_loss_list.append(val_loss.item())
+
+                for i in range(self.config_data["dataset"]["batch_size"]):
+                    pred_captions  = []
+                    label_captions = []
+                    for word in output_captions_idx[i]:
                         a = word.item()
                         word_value = self.__vocab.idx2word[a]
                         if (word_value != "<start>") and (word_value != "<end>" ):
-                            temp_sent.append(word_value)
-                    label_captions.append(temp_sent)
-                
-                output_captions = (torch.Tensor(output_captions)).to(device)
-                output_captions = output_captions.permute([1,0,2])[0]
-               
+                            pred_captions.append(word_value)
+                            
+                    for word in captions1[i]:
+                        a = word.item()
+                        word_value = self.__vocab.idx2word[a]
+                        if (word_value != "<start>") and (word_value != "<end>" ):
+                            label_captions.append(word_value)
                  
+                    bleu1_value = bleu1([label_captions], pred_captions)
+                    bleu4_value = bleu4([label_captions], pred_captions)
 
-                captions_new = []
-                captions_new.extend(captions[0])
-                captions_new = torch.Tensor(captions_new)
-                captions_new = captions_new.to(device)
-                output_captions_for_loss=output_captions_for_loss.to(device)
-                
-                val_loss       = self.__criterion(output_captions_for_loss, captions_new.long()) #calculate loss   
-                bleu1_value     = bleu1(label_captions, pred_captions)
-                bleu4_value     = bleu4(label_captions, pred_captions)
-                val_loss_list.append(val_loss.item())
-                bleu1_list.append(bleu1_value)
-                bleu4_list.append(bleu4_value)
+                    bleu1_list.append(bleu1_value)
+                    bleu4_list.append(bleu4_value)
+#                 break 
         result_str = "Val Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(np.mean(val_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
         self.__log(result_str)
-
+            
         return np.mean(val_loss_list)
     # TODO: Implement your test function here. Generate sample captions and evaluate loss and
     #  bleu scores using the best model. Use utility functions provided to you in caption_utils.
@@ -226,55 +219,49 @@ class Experiment(object):
         bleu1_value = 0
         bleu4_value = 0
 
-  
         with torch.no_grad():
-            for i, (images, captions, img_ids) in enumerate(self.__test_loader):
-                pred_captions  = []
-                label_captions = []      
+            for i, (images, captions, lengths, img_ids) in enumerate(self.__test_loader):
+#                 print(captions.shape)
+
                 images   = images.to(device)
                 captions = captions.to(device)
                 
                 output_captions, output_captions_idx = self.__model(images,captions,train=False)     
                 output_captions_for_loss, output_captions_idx_for_loss = self.__model(images,captions,train=True)
                 
-                for word in output_captions_idx:
-                    a = word.item()
-                    word_value = self.__vocab.idx2word[a]
-                    if (word_value != "<start>") and (word_value != "<end>" ):
-                        pred_captions.append(word_value)
-                    elif word_value == "<end>" :
-                        break
-                for sent in captions:
-                    temp_sent = []
-                    for word in sent:
+                packed_output_captions = pack_padded_sequence(output_captions_for_loss, lengths,batch_first = True)
+                packed_captions=pack_padded_sequence(captions, lengths,batch_first = True)
+
+                test_loss       = self.__criterion(packed_output_captions.data, packed_captions.data) #calculate loss   
+                test_loss_list.append(test_loss.item())
+
+                for i in range(self.config_data["dataset"]["batch_size"]):
+                    pred_captions  = []
+                    label_captions = []
+                    for word in output_captions_idx[i]:
                         a = word.item()
                         word_value = self.__vocab.idx2word[a]
                         if (word_value != "<start>") and (word_value != "<end>" ):
-                            temp_sent.append(word_value)
-                    label_captions.append(temp_sent)
-                
-                output_captions = (torch.Tensor(output_captions)).to(device)
-                output_captions = output_captions.permute([1,0,2])[0]
-               
+                            pred_captions.append(word_value)
+                            
+                    for word in captions[i]:
+                        a = word.item()
+                        word_value = self.__vocab.idx2word[a]
+                        if (word_value != "<start>") and (word_value != "<end>" ):
+                            label_captions.append(word_value)
                  
+                    bleu1_value = bleu1(label_captions, pred_captions)
+                    bleu4_value = bleu4(label_captions, pred_captions)
 
-                captions_new = []
-                captions_new.extend(captions[0])
-                captions_new = torch.Tensor(captions_new)
-                captions_new = captions_new.to(device)
-                output_captions_for_loss=output_captions_for_loss.to(device)
-                
-                test_loss       = self.__criterion(output_captions_for_loss, captions_new.long()) #calculate loss   
-                bleu1_value     = bleu1(label_captions, pred_captions)
-                bleu4_value     = bleu4(label_captions, pred_captions)
-                test_loss_list.append(test_loss.item())
-                bleu1_list.append(bleu1_value)
-                bleu4_list.append(bleu4_value)
+                    bleu1_list.append(bleu1_value)
+                    bleu4_list.append(bleu4_value)
+#                 break
         result_str = "Test Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(np.mean(test_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
         self.__log(result_str)
 
         return np.mean(test_loss_list)
-
+    
+    
     def __save_model(self):
         root_model_path = os.path.join(self.__experiment_dir, 'latest_model.pt')
         model_dict = self.__model.state_dict()
