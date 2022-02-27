@@ -8,6 +8,7 @@
 
 import torch
 import torch.nn as nn
+import gensim
 from torchvision import models
 
 def get_model(config_data, vocab):
@@ -100,7 +101,7 @@ class Decoder(nn.Module):
             vocab_output    = self.linear(hidden)
 
             vocab_output_prob = nn.functional.softmax(vocab_output,dim=1)
-            _, a = torch.max(vocab_output_prob,2)
+            _, a = torch.max(vocab_output,2)
             sampled_index = a
             return vocab_output, sampled_index
                             

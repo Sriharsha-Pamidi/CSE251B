@@ -10,7 +10,7 @@
     "vocabulary_threshold": 2,
     "img_size": 256,
     "batch_size": 8,
-    "num_workers": 8
+    "num_workers": 1
   },
   "experiment": {
     "num_epochs": 10,
@@ -24,7 +24,7 @@
   },
   "generation": {
     "max_length": 20,
-    "deterministic": false,
+    "deterministic": true,
     "temperature": 0.1
   }
 }

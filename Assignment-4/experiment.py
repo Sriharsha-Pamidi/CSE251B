@@ -164,7 +164,7 @@ class Experiment(object):
         bleu4_value = 0
 
         with torch.no_grad():
-            for i, (images1, captions1, lengths, img_ids) in enumerate(self.__val_loader):
+            for j, (images1, captions1, lengths, img_ids) in enumerate(self.__val_loader):
 #                 print(captions1.shape)
                 images1   = images1.to(device)
                 captions1 = captions1.to(device)
@@ -178,7 +178,7 @@ class Experiment(object):
                 val_loss       = self.__criterion(packed_output_captions.data, packed_captions.data) #calculate loss   
                 val_loss_list.append(val_loss.item())
 
-                for i in range(self.config_data["dataset"]["batch_size"]):
+                for i in range(output_captions_idx.shape[0]):
                     pred_captions  = []
                     label_captions = []
                     for word in output_captions_idx[i]:
@@ -199,6 +199,10 @@ class Experiment(object):
                     bleu1_list.append(bleu1_value)
                     bleu4_list.append(bleu4_value)
 #                 break 
+    
+                if j%500 == 0 :            
+                    print("ValLoss: {},Bleu1: {}, Bleu4: {}".format(np.mean(val_loss_list), np.mean(bleu1_list),np.mean(bleu4_list)))
+                    print("\n")
         result_str = "Val Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(np.mean(val_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
         self.__log(result_str)
             
@@ -220,7 +224,7 @@ class Experiment(object):
         bleu4_value = 0
 
         with torch.no_grad():
-            for i, (images, captions, lengths, img_ids) in enumerate(self.__test_loader):
+            for j, (images, captions, lengths, img_ids) in enumerate(self.__test_loader):
 #                 print(captions.shape)
 
                 images   = images.to(device)
@@ -235,7 +239,7 @@ class Experiment(object):
                 test_loss       = self.__criterion(packed_output_captions.data, packed_captions.data) #calculate loss   
                 test_loss_list.append(test_loss.item())
 
-                for i in range(self.config_data["dataset"]["batch_size"]):
+                for i in range(output_captions_idx.shape[0]):
                     pred_captions  = []
                     label_captions = []
                     for word in output_captions_idx[i]:
@@ -250,12 +254,15 @@ class Experiment(object):
                         if (word_value != "<start>") and (word_value != "<end>" ):
                             label_captions.append(word_value)
                  
-                    bleu1_value = bleu1(label_captions, pred_captions)
-                    bleu4_value = bleu4(label_captions, pred_captions)
+                    bleu1_value = bleu1([label_captions], pred_captions)
+                    bleu4_value = bleu4([label_captions], pred_captions)
 
                     bleu1_list.append(bleu1_value)
                     bleu4_list.append(bleu4_value)
 #                 break
+                if j%500 == 0 :            
+                    print("TestLoss: {},Bleu1: {}, Bleu4: {}".format(np.mean(test_loss_list), np.mean(bleu1_list),np.mean(bleu4_list)))
+                    print("\n")
         result_str = "Test Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(np.mean(test_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
         self.__log(result_str)
 
