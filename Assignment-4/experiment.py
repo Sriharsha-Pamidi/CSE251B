@@ -16,6 +16,8 @@ from dataset_factory import get_datasets
 from file_utils import *
 from model_factory import get_model
 import warnings
+from torch.nn.utils.rnn import pack_padded_sequence
+
 warnings.filterwarnings("ignore")
 
 # Class to encapsulate a neural experiment.
@@ -98,7 +100,7 @@ class Experiment(object):
         print("gpu availability ----------------->" , use_gpu)
 
 
-        for i, (images, captions, _) in enumerate(self.__train_loader):
+        for i, (images, captions, lengths, _) in enumerate(self.__train_loader):
 #             reset optimizer gradients
             self.__optimizer.zero_grad()
             pred_captions  = []
@@ -108,40 +110,39 @@ class Experiment(object):
             images   = images.to(device) #transfer the input to the same device as the model's
             captions = captions.to(device) #transfer the labels to the same device as the model's
             self.__model.to(device)
-            output_captions, output_captions_idx = self.__model(images,captions,train=True) 
-            for word in output_captions_idx:
-                    a = word.item()
-                    word_value = self.__vocab.idx2word[a]
-                    pred_captions.append(word_value)
-
-            for sent in captions:
-                temp_sent = []
-                for word in sent:
-                    a = word.item()
-                    word_value = self.__vocab.idx2word[a]
-                    temp_sent.append(word_value)
-                label_captions.append(temp_sent)
-
-                
-                
-            captions_new = []
-#             captions_new.append(self.__vocab.word2idx["<pad>"] )
-            captions_new.extend(captions[0])
-            captions_new = torch.Tensor(captions_new)
-            captions_new = captions_new.to(device)
-            output_captions=output_captions.to(device)
-            #we will not need to transfer the output, it will be automatically in the same device as the model's!
-            loss = self.__criterion(output_captions, captions_new.long())#calculate loss
+            output_captions, output_captions_idx = self.__model(images,captions,train=True)
             
-            if i%500 == 0 :
-                print("label ---->", label_captions)
-                print("\n out ---->",pred_captions)
-                
-            # backpropagate
+            packed_output_captions = pack_padded_sequence(output_captions, lengths,batch_first = True)
+            packed_captions=pack_padded_sequence(captions, lengths,batch_first = True)
+            
+
+            loss = self.__criterion(packed_output_captions.data, packed_captions.data)#calculate loss
             loss.backward()
+            
+            
+            label_captions = []
+            for c in captions:
+                sent = []
+                for w in c:
+                    word_value = self.__vocab.idx2word[w.item()]
+                    sent.append(word_value)
+                label_captions.append(sent)
+
+            pred_captions = []
+            for c in output_captions_idx:
+                sent = []
+                for w in c:
+                    word_value = self.__vocab.idx2word[w.item()]
+                    sent.append(word_value)
+                pred_captions.append(sent)
+                
+            if i%500 == 0 :
+                print("label ---->", label_captions[0])
+                print("out ---->",pred_captions[0])
+                
             if i%500 == 0 :            
                 print("i : {}, loss: {}".format(i, loss.item()))
-
+                print("******************************")
             # update the weights
             self.__optimizer.step()
             
