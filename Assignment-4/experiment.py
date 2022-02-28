@@ -130,7 +130,7 @@ class Experiment(object):
                 for word in output_captions_idx[i]:
                     a = word.item()
                     word_value = self.__vocab.idx2word[a]
-                    if (word_value != "<start>") and (word_value != "<end>" ) and (word != ".") and (word != ",") and (word != "!"):
+                    if (word_value != "<start>") and (word_value != "<end>" ) and (word_value != ".") and (word_value != ",") and (word_value != "!"):
                         pred_captions.append(word_value)
                 
 
