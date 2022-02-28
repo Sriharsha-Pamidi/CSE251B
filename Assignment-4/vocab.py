@@ -92,21 +92,30 @@ def train_word2vec_model(vocabulary):
         with open('glove.6B.300d.txt', 'rt') as fi:
             full_content = fi.read().strip().split('\n')
             
+        glove_embeddings = {}
         for i in range(len(full_content)):
             i_word = full_content[i].split(' ')[0]
-            if i_word in vocabulary:
-                i_embeddings = [float(val) for val in full_content[i].split(' ')[1:]]
-                embeddings.append(i_embeddings)
+            i_embeddings = [float(val) for val in full_content[i].split(' ')[1:]]
+            glove_embeddings[i_word] = i_embeddings
+            
+        embeddings = []
+        for i_word in vocabulary.word2idx:
+#             print(len(embeddings))
+            if i_word in glove_embeddings:
+#                 print(len(glove_embeddings[i_word]))
+                embeddings.append(glove_embeddings[i_word])
+            else:
+                embeddings.append([0 for x in range(300)])
 
         embs_npa = np.array(embeddings)
 
         pad_emb_npa = np.zeros((0, embs_npa.shape[1]))  # embedding for '<pad>' token.
-        start_emb = np.zeros((1, embs_npa.shape[1]))
+        start_emb = np.zeros((0, embs_npa.shape[1]))
         end_emb = np.zeros((0, embs_npa.shape[1]))
         unk_emb_npa = np.mean(embs_npa, axis=0, keepdims=True)  # embedding for '<unk>' token.
 
         # insert embeddings for pad and unk tokens at top of embs_npa.
-        embs_npa = np.vstack((pad_emb_npa, start_emb, end_emb, unk_emb_npa, embs_npa))
+        embs_npa = np.vstack([pad_emb_npa, start_emb, end_emb, unk_emb_npa, embs_npa])
         pickle.dump(embs_npa, open('word_vectors.pkl', 'wb'))
         
     else:
