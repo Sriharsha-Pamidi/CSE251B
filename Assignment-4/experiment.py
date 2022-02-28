@@ -34,7 +34,7 @@ class Experiment(object):
         self.__experiment_dir = os.path.join(ROOT_STATS_DIR, self.__name)
         self.config_data = config_data
         # Load Datasets
-        self.__coco_test, self.__vocab, self.__train_loader, self.__val_loader, self.__test_loader = get_datasets(
+        self.__coco_test, self.__vocab, self.__train_loader, self.__val_loader, self.__test_loader, self.__coco_train = get_datasets(
             config_data)
 
         # Setup Experiment
@@ -49,8 +49,9 @@ class Experiment(object):
         self.__model = get_model(config_data, self.__vocab)
 
         # TODO: Set these Criterion and Optimizers Correctly
+#         self.__criterion = nn.NLLLoss()
         self.__criterion = nn.CrossEntropyLoss()
-        self.__optimizer = torch.optim.AdamW(self.__model.parameters(), lr=config_data["experiment"]["learning_rate"])
+        self.__optimizer = torch.optim.Adam(self.__model.parameters(), lr=config_data["experiment"]["learning_rate"])
 
         self.__init_model()
 
@@ -94,17 +95,21 @@ class Experiment(object):
     def __train(self):
         self.__model.train()
         training_loss = 0
-      
+        bleu1_list = []
+        bleu4_list = []
+        bleu1_value = 0
+        bleu4_value = 0
+
         device = torch.device('cuda') # determine which device to use (gpu or cpu)
         use_gpu = torch.cuda.is_available()
         print("gpu availability ----------------->" , use_gpu)
 
 
-        for i, (images, captions, lengths, _) in enumerate(self.__train_loader):
+        for j, (images, captions, lengths, img_ids) in enumerate(self.__train_loader):
 #             reset optimizer gradients
             self.__optimizer.zero_grad()
-            pred_captions  = []
-            label_captions = []
+         
+            
        
             # # both inputs and labels have to reside in the same device as the model's
             images   = images.to(device) #transfer the input to the same device as the model's
@@ -118,31 +123,42 @@ class Experiment(object):
 
             loss = self.__criterion(packed_output_captions.data, packed_captions.data)#calculate loss
             loss.backward()
-            
-            
-            label_captions = []
-            for c in captions:
-                sent = []
-                for w in c:
-                    word_value = self.__vocab.idx2word[w.item()]
-                    sent.append(word_value)
-                label_captions.append(sent)
+                            
+            for i in range(output_captions_idx.shape[0]):
+                pred_captions  = []
+                label_captions = []
+                for word in output_captions_idx[i]:
+                    a = word.item()
+                    word_value = self.__vocab.idx2word[a]
+                    if (word_value != "<start>") and (word_value != "<end>" ) and (word != ".") and (word != ",") and (word != "!"):
+                        pred_captions.append(word_value)
+                
 
-            pred_captions = []
-            for c in output_captions_idx:
-                sent = []
-                for w in c:
-                    word_value = self.__vocab.idx2word[w.item()]
-                    sent.append(word_value)
-                pred_captions.append(sent)
+    
+                count = 0
+                while count < 5:
+                    temp_sent = []                        
+                    caption_generated = self.__coco_train.imgToAnns[img_ids[i]][count]["caption"]
+                    for word in caption_generated.split():
+                        if (word != ".") and (word != ",") and (word != "!"):
+                            temp_sent.append(word)
+                    label_captions.append(temp_sent)
+                    count +=1
+
                 
-            if i%500 == 0 :
-                print("label ---->", label_captions[0])
-                print("out ---->",pred_captions[0])
-                
-            if i%500 == 0 :            
-                print("i : {}, loss: {}".format(i, loss.item()))
-                print("******************************")
+                bleu1_value = bleu1(label_captions, pred_captions)
+                bleu4_value = bleu4(label_captions, pred_captions)
+
+                bleu1_list.append(bleu1_value)
+                bleu4_list.append(bleu4_value)
+
+            if j%200 == 0 :            
+                    print("Pred Captions----", pred_captions)
+                    print("Label Captions ---",label_captions)
+            if j%200 == 0 :            
+                    print("trainLoss: {},Bleu1: {}, Bleu4: {}".format(loss.item(), np.mean(bleu1_list),np.mean(bleu4_list)))
+                    print("\n")
+          
             # update the weights
             self.__optimizer.step()
 #             break
@@ -158,11 +174,7 @@ class Experiment(object):
         self.__model.to(device)
         
         val_loss_list = []
-        bleu1_list = []
-        bleu4_list = []
-        bleu1_value = 0
-        bleu4_value = 0
-
+   
         with torch.no_grad():
             for j, (images1, captions1, lengths, img_ids) in enumerate(self.__val_loader):
 #                 print(captions1.shape)
@@ -175,35 +187,11 @@ class Experiment(object):
                 packed_output_captions = pack_padded_sequence(output_captions_for_loss, lengths,batch_first = True)
                 packed_captions=pack_padded_sequence(captions1, lengths,batch_first = True)
 
-                val_loss       = self.__criterion(packed_output_captions.data, packed_captions.data) #calculate loss   
+                val_loss       = self.__criterion(packed_output_captions.data, packed_captions.data) #calculate loss         
                 val_loss_list.append(val_loss.item())
+                
 
-                for i in range(output_captions_idx.shape[0]):
-                    pred_captions  = []
-                    label_captions = []
-                    for word in output_captions_idx[i]:
-                        a = word.item()
-                        word_value = self.__vocab.idx2word[a]
-                        if (word_value != "<start>") and (word_value != "<end>" ):
-                            pred_captions.append(word_value)
-                            
-                    for word in captions1[i]:
-                        a = word.item()
-                        word_value = self.__vocab.idx2word[a]
-                        if (word_value != "<start>") and (word_value != "<end>" ):
-                            label_captions.append(word_value)
-                 
-                    bleu1_value = bleu1([label_captions], pred_captions)
-                    bleu4_value = bleu4([label_captions], pred_captions)
-
-                    bleu1_list.append(bleu1_value)
-                    bleu4_list.append(bleu4_value)
-#                 break 
-    
-                if j%500 == 0 :            
-                    print("ValLoss: {},Bleu1: {}, Bleu4: {}".format(np.mean(val_loss_list), np.mean(bleu1_list),np.mean(bleu4_list)))
-                    print("\n")
-        result_str = "Val Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(np.mean(val_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
+                result_str = "Val Performance: Loss: {}".format(np.mean(val_loss_list))
         self.__log(result_str)
             
         return np.mean(val_loss_list)
@@ -247,20 +235,26 @@ class Experiment(object):
                         word_value = self.__vocab.idx2word[a]
                         if (word_value != "<start>") and (word_value != "<end>" ):
                             pred_captions.append(word_value)
+#                     if j%500 == 0:
+#                         print("Pred Captions----------------------",pred_captions)
                             
-                    for word in captions[i]:
-                        a = word.item()
-                        word_value = self.__vocab.idx2word[a]
-                        if (word_value != "<start>") and (word_value != "<end>" ):
-                            label_captions.append(word_value)
-                 
-                    bleu1_value = bleu1([label_captions], pred_captions)
-                    bleu4_value = bleu4([label_captions], pred_captions)
+                    count = 0
+                    while count < 5:
+                        temp_sent = []                        
+                        caption_generated = self.__coco_test.imgToAnns[img_ids[i]][count]["caption"]
+                        for word in caption_generated.split():
+                            temp_sent.append(word)
+                        label_captions.append(temp_sent)
+                        count +=1
+#                     if j%500 == 0:
+#                         print("Label Captions----------------------",label_captions)
+                    bleu1_value = bleu1(label_captions, pred_captions)
+                    bleu4_value = bleu4(label_captions, pred_captions)
 
                     bleu1_list.append(bleu1_value)
                     bleu4_list.append(bleu4_value)
 #                 break
-                if j%500 == 0 :            
+                if j%100 == 0 :            
                     print("TestLoss: {},Bleu1: {}, Bleu4: {}".format(np.mean(test_loss_list), np.mean(bleu1_list),np.mean(bleu4_list)))
                     print("\n")
         result_str = "Test Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(np.mean(test_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))

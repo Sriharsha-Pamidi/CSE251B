@@ -100,7 +100,7 @@ class Decoder(nn.Module):
             hidden,_        = self.layer(embeddings)
             vocab_output    = self.linear(hidden)
 
-            vocab_output_prob = nn.functional.softmax(vocab_output,dim=1)
+            vocab_output_prob = nn.functional.softmax(vocab_output,dim=2)
             _, a = torch.max(vocab_output,2)
             sampled_index = a
             return vocab_output, sampled_index
@@ -117,7 +117,7 @@ class Decoder(nn.Module):
             for i in range(self.max_length):
                 hidden,_         = self.layer(input_embedding)
                 output_embedding = self.linear(hidden)
-                output_prob      = nn.functional.softmax((output_embedding)/(self.temp),dim=1)
+                output_prob      = nn.functional.softmax((output_embedding)/(self.temp),dim=2)
                 output_prob.to(device)
                 output_embedding.to(device)
                 
