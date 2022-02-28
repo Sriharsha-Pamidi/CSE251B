@@ -86,7 +86,7 @@ def train_word2vec_model(json):
             caption = str(coco.anns[id]['caption'])
             corpus.append(caption.lower())
         
-        model = Word2Vec(corpus, vector_size=300, window=5, min_count=5, workers=4)
+        model = Word2Vec(corpus, vector_size=300, window=5, min_count=5, workers=1)
         # vocab, embeddings = [], []
         # with open('glove.6B.300d.txt', 'rt') as fi:
         #     full_content = fi.read().strip().split('\n')
