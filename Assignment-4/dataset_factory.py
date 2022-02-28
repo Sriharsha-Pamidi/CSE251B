@@ -8,7 +8,7 @@ import csv, os
 from torch.utils.data import DataLoader
 from pycocotools.coco import COCO
 
-from vocab import load_vocab
+from vocab import load_vocab, train_word2vec_model
 from coco_dataset import CocoDataset, collate_fn
 
 
@@ -31,7 +31,8 @@ def get_datasets(config_data):
     
     vocab_threshold = config_data['dataset']['vocabulary_threshold']
     vocabulary = load_vocab(train_annotation_file, vocab_threshold)
-
+    train_word2vec_model(vocabulary)
+    
     train_data_loader = get_coco_dataloader(train_ids_file_path, root_train, train_annotation_file, coco, vocabulary,
                                             config_data)
     val_data_loader = get_coco_dataloader(val_ids_file_path, root_val, train_annotation_file, coco, vocabulary,

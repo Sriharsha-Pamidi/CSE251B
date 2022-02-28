@@ -10,6 +10,9 @@ import torch
 import torch.nn as nn
 import gensim
 from torchvision import models
+from vocab import load_word2vec_model
+from torch.nn.utils.rnn import pack_padded_sequence
+from torch.nn.utils.rnn import pad_packed_sequence
 
 def get_model(config_data, vocab):
     hidden_size = config_data['model']['hidden_size']
@@ -36,9 +39,9 @@ class Img_Cap(nn.Module):
         for params in self.decoder.parameters():
             params.requires_grad = True
             
-    def forward(self, images,captions,train=True):
+    def forward(self, images,captions,lengths, train=True):
         encoded_images = self.encoder(images)
-        output_captions , output_captions_idx= self.decoder(encoded_images,captions,train)
+        output_captions , output_captions_idx= self.decoder(encoded_images,captions,lengths, train)
         
         return output_captions, output_captions_idx
             
@@ -80,10 +83,14 @@ class Decoder(nn.Module):
         self.temp           = config_data['generation']['temperature']
         self.deterministic  = config_data['generation']['deterministic']
         self.vocab_len      = vocab_len
+        device = torch.device('cuda') # determine which device to use (gpu or cpu)
 
-        self.embedding      = nn.Embedding(self.vocab_len, self.embedding_size)
+        # self.embedding      = nn.Embedding(self.vocab_len, self.embedding_size)
+        word_weights = torch.FloatTensor(load_word2vec_model())
+        self.embedding = nn.Embedding.from_pretrained(load_word2vec_model())
+        self.embedding.requires_grad = False
         
-        #in baseline put no_layers=2
+        # in baseline put no_layers=2
         if self.model_type == 'LSTM':
             self.layer = nn.LSTM(self.embedding_size, self.hidden_size, self.num_layers, batch_first=True)
         elif self.model_type == 'RNN':
@@ -92,52 +99,47 @@ class Decoder(nn.Module):
         self.linear=nn.Linear(self.hidden_size, self.vocab_len)
 
         
-    def forward(self, encoded_images, captions, train=True):
+    def forward(self, encoded_images, captions, lengths, train=True):
                        
         if train == True :
             word_embeddings = self.embedding(captions)
             embeddings      = torch.cat((encoded_images.unsqueeze(1), word_embeddings),1)
-            hidden,_        = self.layer(embeddings)
-            vocab_output    = self.linear(hidden)
-
-            vocab_output_prob = nn.functional.softmax(vocab_output,dim=2)
-            _, a = torch.max(vocab_output,2)
+            embeddings_packed = pack_padded_sequence(embeddings,lengths, batch_first=True, enforce_sorted=False)
+            hidden,_        = self.layer(embeddings_packed)
+            unpacked_hidden ,_= pad_packed_sequence(hidden,batch_first=True)
+            vocab_output    = self.linear(unpacked_hidden)
+            vocab_output_prob = nn.functional.log_softmax(vocab_output,dim=2)
+            _, a = torch.max(vocab_output_prob,2)
             sampled_index = a
-            return vocab_output, sampled_index
+            return vocab_output_prob, sampled_index
                             
         else :
             input_embedding = encoded_images.unsqueeze(1)
-#             torch.tensor(output_captions)
-#             torch.tensor(output_captions_idx)
-            device = torch.device('cuda') # determine which device to use (gpu or cpu)
-
-#             output_captions.to(device)
-#             output_captions_idx.to(device)
-            
+            device = torch.device('cuda') # determine which device to use (gpu or cpu)            
             for i in range(self.max_length):
                 hidden,_         = self.layer(input_embedding)
                 output_embedding = self.linear(hidden)
-                output_prob      = nn.functional.softmax((output_embedding)/(self.temp),dim=2)
-                output_prob.to(device)
+                output_embedding_prob = nn.functional.softmax((output_embedding)/(self.temp),dim=2)
+                output_embedding_prob.to(device)
                 output_embedding.to(device)
                 
                 if self.deterministic == True :
-                    _, a = torch.max(output_prob,2)
+                    _, a = torch.max(output_embedding_prob,2)
                     sampled_index = a
                     input_embedding = self.embedding(a)
     
                 else :
-                    sampled_index = list(torch.utils.data.WeightedRandomSampler(output_prob.squeeze(1),1))
-                    sampled_index=torch.tensor(sampled_index)
-                    sampled_index=sampled_index.int()
-                    sampled_index=sampled_index.cuda()
-                    input_embedding = self.embedding(sampled_index)                  
+                    sampled_index = list(torch.utils.data.WeightedRandomSampler(output_embedding_prob.squeeze(1),1))
+                    sampled_index = torch.tensor(sampled_index)
+                    sampled_index = sampled_index.int()
+                    sampled_index = sampled_index.cuda()
+                    input_embedding = self.embedding(sampled_index)
 
                 if(i==0):
-                    output_captions = output_embedding
+                    output_captions = output_embedding_prob
                     output_captions_idx = sampled_index
                 else:
-                    output_captions = torch.cat((output_captions,output_embedding),1)
+                    output_captions = torch.cat((output_captions,output_embedding_prob),1)
                     output_captions_idx = torch.cat((output_captions_idx,sampled_index),1)
 
             return output_captions, output_captions_idx
