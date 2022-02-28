@@ -9,6 +9,7 @@
 import torch
 import torch.nn as nn
 import gensim
+import numpy as np
 from torchvision import models
 from vocab import load_word2vec_model
 
@@ -84,7 +85,7 @@ class Decoder(nn.Module):
 
         # self.embedding      = nn.Embedding(self.vocab_len, self.embedding_size)
         word_weights = torch.FloatTensor(load_word2vec_model())
-        self.embedding = nn.Embedding.from_pretrained(load_word2vec_model())
+        self.embedding = nn.Embedding.from_pretrained(torch.from_numpy(load_word2vec_model()))
         self.embedding.requires_grad = False
         
         # in baseline put no_layers=2
