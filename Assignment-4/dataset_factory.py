@@ -31,7 +31,7 @@ def get_datasets(config_data):
 
     vocab_threshold = config_data['dataset']['vocabulary_threshold']
     vocabulary = load_vocab(train_annotation_file, vocab_threshold)
-    train_vectors = train_word2vec_model(train_annotation_file)
+    train_word2vec_model(train_annotation_file)
     
     train_data_loader = get_coco_dataloader(train_ids_file_path, root_train, train_annotation_file, coco, vocabulary,
                                             config_data)
