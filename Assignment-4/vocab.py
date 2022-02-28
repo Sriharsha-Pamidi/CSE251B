@@ -79,6 +79,7 @@ def train_word2vec_model(vocabulary):
     file_exists = os.path.exists('word_vectors.pkl')
     
     if not file_exists:
+
         # coco = COCO(json)
         # ids = coco.anns.keys()
         # corpus = []
