@@ -114,5 +114,8 @@ def train_word2vec_model(json):
 
 
 def load_word2vec_model():
-    wv_vectors = pickle.load('word_vectors.pkl')
+#     wv_vectors = pickle.load('word_vectors.pkl')
+    file = open("word_vectors.pkl",'rb')
+    wv_vectors = pickle.load(file)
+    file.close()
     return wv_vectors

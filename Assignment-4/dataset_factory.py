@@ -40,7 +40,7 @@ def get_datasets(config_data):
     test_data_loader = get_coco_dataloader(test_ids_file_path, root_test, test_annotation_file, coco_test, vocabulary,
                                            config_data)
 
-    return coco_test, vocabulary, train_data_loader, val_data_loader, test_data_loader
+    return coco_test, vocabulary, train_data_loader, val_data_loader, test_data_loader, coco
 
 
 def get_coco_dataloader(img_ids_file_path, imgs_root_dir, annotation_file_path, coco_obj, vocabulary, config_data):
