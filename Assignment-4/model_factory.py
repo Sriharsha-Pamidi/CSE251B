@@ -85,12 +85,10 @@ class Decoder(nn.Module):
         self.vocab_len      = vocab_len
         device = torch.device('cuda') # determine which device to use (gpu or cpu)
 
-        self.embedding      = nn.Embedding(self.vocab_len, self.embedding_size)
-#         vectors = load_word2vec_model()
-#         vectors = vectors.to(device)
-#         self.embedding = nn.Embedding.from_pretrained(vectors)
-#         for param in self.embedding.parameters():
-#             param.requires_grad = False
+        # self.embedding      = nn.Embedding(self.vocab_len, self.embedding_size)
+        word_weights = torch.FloatTensor(load_word2vec_model())
+        self.embedding = nn.Embedding.from_pretrained(load_word2vec_model())
+        self.embedding.requires_grad = False
         
         # in baseline put no_layers=2
         if self.model_type == 'LSTM':

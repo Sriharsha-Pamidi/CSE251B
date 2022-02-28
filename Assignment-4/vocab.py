@@ -75,46 +75,45 @@ def build_vocab(json, threshold):
     return vocab
 
 
-def train_word2vec_model(json):
+def train_word2vec_model(vocabulary):
     file_exists = os.path.exists('word_vectors.pkl')
     
     if not file_exists:
-        coco = COCO(json)
-        ids = coco.anns.keys()
-        corpus = []
-        for i, id in enumerate(ids):
-            caption = str(coco.anns[id]['caption'])
-            corpus.append(caption.lower())
+
+        # coco = COCO(json)
+        # ids = coco.anns.keys()
+        # corpus = []
+        # for i, id in enumerate(ids):
+        #     caption = str(coco.anns[id]['caption'])
+        #     corpus.append(caption.lower())
+        #
+        # model = Word2Vec(corpus, vector_size=300, window=5, min_count=5, workers=4)
+        embeddings = []
+        with open('glove.6B.300d.txt', 'rt') as fi:
+            full_content = fi.read().strip().split('\n')
+            
+        for i in range(len(full_content)):
+            i_word = full_content[i].split(' ')[0]
+            if i_word in vocabulary:
+                i_embeddings = [float(val) for val in full_content[i].split(' ')[1:]]
+                embeddings.append(i_embeddings)
+
+        embs_npa = np.array(embeddings)
+
+        pad_emb_npa = np.zeros((0, embs_npa.shape[1]))  # embedding for '<pad>' token.
+        start_emb = np.zeros((1, embs_npa.shape[1]))
+        end_emb = np.zeros((0, embs_npa.shape[1]))
+        unk_emb_npa = np.mean(embs_npa, axis=0, keepdims=True)  # embedding for '<unk>' token.
+
+        # insert embeddings for pad and unk tokens at top of embs_npa.
+        embs_npa = np.vstack((pad_emb_npa, start_emb, end_emb, unk_emb_npa, embs_npa))
+        pickle.dump(embs_npa, open('word_vectors.pkl', 'wb'))
         
-        model = Word2Vec(corpus, vector_size=300, window=5, min_count=5, workers=1)
-        # vocab, embeddings = [], []
-        # with open('glove.6B.300d.txt', 'rt') as fi:
-        #     full_content = fi.read().strip().split('\n')
-        # for i in range(len(full_content)):
-        #     i_word = full_content[i].split(' ')[0]
-        #     i_embeddings = [float(val) for val in full_content[i].split(' ')[1:]]
-        #     vocab.append(i_word)
-        #     embeddings.append(i_embeddings)
-        #
-        # vocab_npa = np.array(vocab)
-        # embs_npa = np.array(embeddings)
-        #
-        # # insert '<pad>' and '<unk>' tokens at start of vocab_npa.
-        # vocab_npa = np.insert(vocab_npa, 0, '<pad>')
-        # vocab_npa = np.insert(vocab_npa, 1, '<unk>')
-        #
-        # pad_emb_npa = np.zeros((1, embs_npa.shape[1]))  # embedding for '<pad>' token.
-        # unk_emb_npa = np.mean(embs_npa, axis=0, keepdims=True)  # embedding for '<unk>' token.
-        #
-        # # insert embeddings for pad and unk tokens at top of embs_npa.
-        # embs_npa = np.vstack((pad_emb_npa, unk_emb_npa, embs_npa))
-        pickle.dump(torch.FloatTensor(model.wv.vectors), open('word_vectors.pkl', 'wb'))
     else:
         pass
 
 
 def load_word2vec_model():
-#     wv_vectors = pickle.load('word_vectors.pkl')
     file = open("word_vectors.pkl",'rb')
     wv_vectors = pickle.load(file)
     file.close()
