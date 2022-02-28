@@ -28,7 +28,7 @@ def get_datasets(config_data):
     test_annotation_file = config_data['dataset']['test_annotation_file_path']
     coco = COCO(train_annotation_file)
     coco_test = COCO(test_annotation_file)
-
+    
     vocab_threshold = config_data['dataset']['vocabulary_threshold']
     vocabulary = load_vocab(train_annotation_file, vocab_threshold)
     train_word2vec_model(train_annotation_file)
