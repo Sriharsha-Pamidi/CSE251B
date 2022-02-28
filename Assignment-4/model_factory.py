@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 import gensim
 from torchvision import models
+from vocab import load_word2vec_model
 
 def get_model(config_data, vocab):
     hidden_size = config_data['model']['hidden_size']
@@ -82,10 +83,7 @@ class Decoder(nn.Module):
         self.vocab_len      = vocab_len
 
         # self.embedding      = nn.Embedding(self.vocab_len, self.embedding_size)
-        word_model = gensim.models.Word2Vec.load('./word2vec_pretrain_v300.model')
-        word_weights = torch.FloatTensor(word_model.wv.vectors)
-        
-        self.embedding = nn.Embedding.from_pretrained(torch.from_numpy(word2vec_model()).float())
+        self.embedding = nn.Embedding.from_pretrained(torch.from_numpy(load_word2vec_model()).float())
         self.embedding.requires_grad = False
         
         # in baseline put no_layers=2
@@ -103,38 +101,48 @@ class Decoder(nn.Module):
             word_embeddings = self.embedding(captions)
             embeddings      = torch.cat((encoded_images.unsqueeze(1), word_embeddings),1)
             hidden,_        = self.layer(embeddings)
-            vocab_output    = self.linear(hidden) 
-            vocab_output_prob = nn.functional.softmax(vocab_output,dim=1)
-            _, a = torch.max(vocab_output_prob,2)
+            vocab_output    = self.linear(hidden)
+
+            vocab_output_prob = nn.functional.softmax(vocab_output,dim=2)
+            _, a = torch.max(vocab_output,2)
             sampled_index = a
             return vocab_output, sampled_index
                             
         else :
             input_embedding = encoded_images.unsqueeze(1)
-            output_captions = []
-            output_captions_idx=[]
+#             torch.tensor(output_captions)
+#             torch.tensor(output_captions_idx)
+            device = torch.device('cuda') # determine which device to use (gpu or cpu)
+
+#             output_captions.to(device)
+#             output_captions_idx.to(device)
+            
             for i in range(self.max_length):
                 hidden,_         = self.layer(input_embedding)
-                output_embedding = self.linear(hidden[0])
-                output_prob      = nn.functional.softmax((output_embedding)/(self.temp),dim=1)
-                output_prob.to("cuda")
+                output_embedding = self.linear(hidden)
+                output_prob      = nn.functional.softmax((output_embedding)/(self.temp),dim=2)
+                output_prob.to(device)
+                output_embedding.to(device)
                 
                 if self.deterministic == True :
-                    _, a = torch.max(output_prob,1)
+                    _, a = torch.max(output_prob,2)
                     sampled_index = a
-                    input_embedding = self.embedding(a).unsqueeze(1)
-                    
+                    input_embedding = self.embedding(a)
+    
                 else :
-                    sampled_index = list(torch.utils.data.WeightedRandomSampler(output_prob,1))
-                    sampled_index=torch.Tensor(sampled_index[0])
+                    sampled_index = list(torch.utils.data.WeightedRandomSampler(output_prob.squeeze(1),1))
+                    sampled_index=torch.tensor(sampled_index)
                     sampled_index=sampled_index.int()
                     sampled_index=sampled_index.cuda()
-                    input_embedding = self.embedding(sampled_index).unsqueeze(1)                    
-                    
-                output_captions.append(output_embedding.tolist())
-                output_captions_idx.append(sampled_index)
+                    input_embedding = self.embedding(sampled_index)
 
-                
+                if(i==0):
+                    output_captions = output_embedding
+                    output_captions_idx = sampled_index
+                else:
+                    output_captions = torch.cat((output_captions,output_embedding),1)
+                    output_captions_idx = torch.cat((output_captions_idx,sampled_index),1)
+
             return output_captions, output_captions_idx
        
         

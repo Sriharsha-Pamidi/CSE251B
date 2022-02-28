@@ -9,11 +9,11 @@
     "images_root_dir": "./data/images/",
     "vocabulary_threshold": 2,
     "img_size": 256,
-    "batch_size": 1,
-    "num_workers": 8
+    "batch_size": 8,
+    "num_workers": 1
   },
   "experiment": {
-    "num_epochs": 1,
+    "num_epochs": 10,
     "learning_rate": 0.0001
   },
   "model": {
@@ -24,7 +24,7 @@
   },
   "generation": {
     "max_length": 20,
-    "deterministic": false,
+    "deterministic": true,
     "temperature": 0.1
   }
 }
