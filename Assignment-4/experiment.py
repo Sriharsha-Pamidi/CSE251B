@@ -52,7 +52,7 @@ class Experiment(object):
         # TODO: Set these Criterion and Optimizers Correctly
         self.__criterion = nn.NLLLoss()
 #         self.__criterion = nn.CrossEntropyLoss()
-        self.__optimizer = torch.optim.Adam(self.__model.parameters(), lr=config_data["experiment"]["learning_rate"])
+        self.__optimizer = torch.optim.AdamW(self.__model.parameters(), lr=config_data["experiment"]["learning_rate"])
 
         self.__init_model()
 
@@ -158,7 +158,7 @@ class Experiment(object):
             if j%500 == 0 :
                     print("trainLoss: {},Bleu1: {}, Bleu4: {}".format(loss.item(), np.mean(bleu1_list),np.mean(bleu4_list)))
                     print("\n")
-          
+#             break
             # update the weights
             self.__optimizer.step()
         return loss.item()
@@ -177,8 +177,14 @@ class Experiment(object):
             for j, (images1, captions1, lengths, img_ids) in enumerate(self.__val_loader):
                 images1   = images1.to(device)
                 captions1 = captions1.to(device)
-                
-                output_captions, output_captions_idx = self.__model(images1,captions1,lengths, train=False)
+                for k in range(captions1.shape[0]):
+                    output_captions, output_captions_idx = self.__model(images1[k].unsqueeze(0) , captions1[k].unsqueeze(0), lengths[k] , train=False)
+                    if k==0:
+                        A = output_captions_idx
+                    else:
+                        A = torch.cat((A,output_captions_idx),0)
+                output_captions_idx = A
+              
                 output_captions_for_loss, output_captions_idx_for_loss = self.__model(images1,captions1,lengths, train=True)
                 
                 packed_output_captions = pack_padded_sequence(output_captions_for_loss, lengths,batch_first = True)
@@ -187,10 +193,10 @@ class Experiment(object):
                 val_loss       = self.__criterion(packed_output_captions.data, packed_captions.data) #calculate loss
                 val_loss_list.append(val_loss.item())
                 
-                if j%500 == 0:
+                if j%1000 == 0:
                     result_str = "Val Performance: Loss: {}".format(np.mean(val_loss_list))
                     self.__log(result_str)
-            
+#                 break
         return np.mean(val_loss_list)
     # TODO: Implement your test function here. Generate sample captions and evaluate loss and
     #  bleu scores using the best model. Use utility functions provided to you in caption_utils.
@@ -212,15 +218,20 @@ class Experiment(object):
             for j, (images, captions, lengths, img_ids) in enumerate(self.__test_loader):
                 images   = images.to(device)
                 captions = captions.to(device)
-                
-                output_captions, output_captions_idx = self.__model(images,captions,lengths, train=False)     
+                for k in range(captions.shape[0]):
+                    output_captions, output_captions_idx = self.__model(images[k].unsqueeze(0) , captions[k].unsqueeze(0), lengths[k] , train=False)
+                    if k==0:
+                        A = output_captions_idx
+                    else:
+                        A = torch.cat((A,output_captions_idx),0)
+                output_captions_idx = A
+                    
+#                 print("oooo",output_captions_idx.shape)
+#                 assert 1==2
                 output_captions_for_loss, output_captions_idx_for_loss = self.__model(images,captions,lengths, train=True)
-                
                 packed_output_captions = pack_padded_sequence(output_captions_for_loss, lengths,batch_first = True)
                 packed_captions=pack_padded_sequence(captions, lengths,batch_first = True)
-
                 test_loss       = self.__criterion(packed_output_captions.data, packed_captions.data) #calculate loss
-                
                 test_loss_list.append(test_loss.item())
 
                 for i in range(output_captions_idx.shape[0]):
@@ -249,15 +260,15 @@ class Experiment(object):
 
                     bleu1_list.append(bleu1_value)
                     bleu4_list.append(bleu4_value)
-                if j%500 == 0 :
+                if j%1000 == 0 :
                     print("Pred Captions----", pred_captions)
                     print("Label Captions ---",label_captions)
-                if j%500 == 0 :
                     print("TestLoss: {},Bleu1: {}, Bleu4: {}".format(np.mean(test_loss_list), np.mean(bleu1_list),np.mean(bleu4_list)))
                     print("\n")
+#                 break
         result_str = "Test Performance: Loss: {}, Bleu1: {}, Bleu4: {}".format(np.mean(test_loss_list), np.mean(bleu1_list),np.mean(bleu4_list))
         self.__log(result_str)
-
+            
         return np.mean(test_loss_list)
     
     

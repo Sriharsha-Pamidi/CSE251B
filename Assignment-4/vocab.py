@@ -88,7 +88,7 @@ def train_word2vec_model(vocabulary):
         #     corpus.append(caption.lower())
         #
         # model = Word2Vec(corpus, vector_size=300, window=5, min_count=5, workers=4)
-        embeddings = []
+        
         with open('glove.6B.300d.txt', 'rt') as fi:
             full_content = fi.read().strip().split('\n')
             
@@ -108,7 +108,7 @@ def train_word2vec_model(vocabulary):
                 embeddings.append([0 for x in range(300)])
 
         embs_npa = np.array(embeddings)
-
+        
         pad_emb_npa = np.zeros((0, embs_npa.shape[1]))  # embedding for '<pad>' token.
         start_emb = np.zeros((0, embs_npa.shape[1]))
         end_emb = np.zeros((0, embs_npa.shape[1]))
@@ -126,4 +126,5 @@ def load_word2vec_model():
     file = open("word_vectors.pkl",'rb')
     wv_vectors = pickle.load(file)
     file.close()
+#     print(wv_vectors.shape)
     return wv_vectors
