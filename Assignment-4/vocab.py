@@ -106,7 +106,7 @@ def train_word2vec_model(vocabulary):
                 embeddings.append(glove_embeddings[i_word])
             else:
                 embeddings.append([0 for x in range(300)])
-        
+
         embs_npa = np.array(embeddings)
         
         pad_emb_npa = np.zeros((0, embs_npa.shape[1]))  # embedding for '<pad>' token.

@@ -131,7 +131,7 @@ class Experiment(object):
                     a = word.item()
                     word_value = self.__vocab.idx2word[a]
                     word_value = word_value.lower()
-                    if (word_value != "<start>") and (word_value != "<end>" ) and (word_value != ".") and (word_value != ",") and (word_value != "!"):
+                    if (word_value != "<start>") and (word_value != "<end>" ) and (word_value != ".") and (word_value != ",") and (word_value != "!") and (word_value != "<unk>"):
                         pred_captions.append(word_value)
                 
                 count = 0
@@ -140,7 +140,7 @@ class Experiment(object):
                     caption_generated = self.__coco_train.imgToAnns[img_ids[i]][count]["caption"]
                     for word_value in caption_generated.split():
                         word_value = word_value.lower()
-                        if (word_value != ".") and (word_value != ",") and (word_value != "!"):
+                        if (word_value != ".") and (word_value != ",") and (word_value != "!") and (word_value != "<unk>"):
                             temp_sent.append(word_value)
                     label_captions.append(temp_sent)
                     count +=1
@@ -241,7 +241,8 @@ class Experiment(object):
                         a = word.item()
                         word_value = self.__vocab.idx2word[a]
                         word_value = word_value.lower()
-                        if (word_value != "<start>") and (word_value != "<end>" )  and (word_value != ".") and (word_value != ",") and (word_value != "!"):
+                        print("word  is ",word_value)
+                        if (word_value != "<start>") and (word_value != "<end>" )  and (word_value != ".") and (word_value != ",") and (word_value != "!") and (word_value != "<unk>"):
                             pred_captions.append(word_value)
 
                     count = 0
